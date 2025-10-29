@@ -14,15 +14,13 @@ class AuthController
         $json_data = file_get_contents("php://input");
         $data = json_decode($json_data, true);
 
-        var_dump($data);
-        return;
 
         // Verificar que los datos JSON existan y sean válidos
-      /*   if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
+        if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
             http_response_code(400); // Bad Request
             echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido (JSON esperado)."]);
             return;
-        } */
+        }
 
         // Obtener datos
         $email = $data['email'];
