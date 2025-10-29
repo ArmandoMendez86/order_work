@@ -51,8 +51,9 @@ class AuthController
             return;
         }
 
-        var_dump($user);
-        
+        echo var_dump($user);
+        return;
+
 
         // 5. Verificar la contraseña
         if (password_verify($password, $user->password_hash)) {
@@ -69,7 +70,6 @@ class AuthController
             http_response_code(200);
             echo json_encode(["success" => true, "role" => $user->role, "message" => "Inicio de sesión exitoso."]);
         } else {
-            // Contraseña incorrecta
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
         }
