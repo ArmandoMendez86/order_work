@@ -7,12 +7,10 @@ class AuthController
 
     public function login()
     {
-        // Headers
         header("Access-Control-Allow-Origin: *"); 
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
-        // --- MODIFICACIÓN CLAVE: Leer JSON del Body (Resuelve $_POST vacío) ---
         $json_data = file_get_contents("php://input");
         $data = json_decode($json_data, true);
         
