@@ -6,24 +6,17 @@ class User
   private $conn;
   private $table_name = "Users";
 
-  // Propiedades del objeto
-  public $user_id;
-  public $full_name;
-  public $email;
-  public $password_hash;
-  public $role;
-
   // Constructor con la conexión a la BD
   public function __construct($db)
   {
     $this->conn = $db;
   }
 
-  // Método para buscar un usuario por Email
+  // --- MÉTODO 2: Devuelve el registro (array) o false ---
   public function findByEmail($email)
   {
     $query = "SELECT
-                    user_id, full_name, email, password_hash, role
+                    user_id, full_name, email, password_hash, `role`
                   FROM
                     " . $this->table_name . "
                   WHERE
@@ -37,9 +30,8 @@ class User
       return false;
     }
 
-    // Limpiar datos (sanitizar) Y AÑADIR TRIM
+    // Limpiar datos (sanitizar) Y AÑADIR TRIM (para MariaDB/Hostinger)
     $clean_email = htmlspecialchars(strip_tags(trim($email)));
-
     $stmt->bindParam(':email', $clean_email);
 
     try {
@@ -49,21 +41,18 @@ class User
       return false;
     }
 
-
     if ($stmt->rowCount() > 0) {
       // Obtener el registro
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-      // Asignar valores a las propiedades del objeto
-      $this->user_id = $row['user_id'];
-      $this->full_name = $row['full_name'];
-      $this->email = $row['email'];
-      $this->password_hash = trim($row['password_hash']); // Limpieza para MariaDB
-      $this->role = $row['role'];
-
-      return true; // Devolvemos true (Método 1) para indicar éxito
+      // CRÍTICO: Limpiar el hash de la BD de cualquier espacio/carácter invisible
+      $row['password_hash'] = trim($row['password_hash']);
+      
+      // Devolvemos el registro (array)
+      return $row;
     }
 
     return false;
   }
-} // <-- Solo una llave aquí (CORREGIDO)
+} // <-- CORREGIDO: Solo una llave de cierre para la clase
+?>

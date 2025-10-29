@@ -22,7 +22,7 @@ class AuthController
             return;
         }
 
-        $email = $data['email']; // El trim se hace en User.php ahora
+        $email = $data['email'];
         $password = $data['password'];
 
         // 2. Obtener conexión a la BD
@@ -38,34 +38,38 @@ class AuthController
         // 3. Instanciar objeto User
         $user = new User($db);
 
-        // 4. Buscar al usuario por email (User.php devuelve true/false)
-        if (!$user->findByEmail($email)) {
+        // --- 4. MODIFICADO: Usar Método 2 (Obtener el registro) ---
+        $user_data = $user->findByEmail($email); // $user_data es ahora un array (el registro) o false
+
+        if (!$user_data) {
+            // Si $user_data es false (email no encontrado)
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
             return;
         }
 
-        // 5. Verificar la contraseña (El objeto $user ya está poblado)
-        if (password_verify($password, $user->password_hash)) {
+        // --- 5. MODIFICADO: Verificar usando el array $user_data ---
+        if (password_verify($password, $user_data['password_hash'])) {
             // Contraseña correcta
             if (session_status() == PHP_SESSION_NONE) {
                 session_start();
             }
 
-            $_SESSION['user_id'] = $user->user_id;
-            $_SESSION['email'] = $user->email;
-            $_SESSION['full_name'] = $user->full_name;
-            $_SESSION['role'] = $user->role;
+            // Guardar datos del array en la sesión
+            $_SESSION['user_id'] = $user_data['user_id'];
+            $_SESSION['email'] = $user_data['email'];
+            $_SESSION['full_name'] = $user_data['full_name'];
+            $_SESSION['role'] = $user_data['role'];
 
             http_response_code(200);
-            echo json_encode(["success" => true, "role" => $user->role, "message" => "Inicio de sesión exitoso."]);
+            echo json_encode(["success" => true, "role" => $user_data['role'], "message" => "Inicio de sesión exitoso."]);
         } else {
             // Contraseña incorrecta
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
         }
     }
-    
+
     public function logout()
     {
         if (session_status() == PHP_SESSION_NONE) {
