@@ -3,10 +3,10 @@
 
 class Database {
     // Variables de conexión a la BD
-    /* private $host = "localhost"; 
-    private $db_name = "order_work"; 
-    private $username = "root"; 
-    private $password = "";  */
+    //private $host = "localhost"; 
+    //private $db_name = "order_work"; 
+    //private $username = "root"; 
+    //private $password = ""; 
 
     private $host = "localhost"; 
     private $db_name = "u916760597_order_work"; 
