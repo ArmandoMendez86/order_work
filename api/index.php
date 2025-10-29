@@ -16,8 +16,38 @@ switch ($endpoint) {
     case 'login':
         require_once __DIR__ . '/controllers/AuthController.php';
         $controller = new AuthController();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') $controller->login();
-        else {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+            // --- INICIO DE CÓDIGO DE DEPURACIÓN ---
+
+            // La llamada AJAX usa URLSearchParams, por lo que los datos están en $_POST
+            if (empty($_POST)) {
+                // Si $_POST está vacío, el servidor NO está procesando el body del formulario.
+                // Esto es común con hosts que esperan JSON o que tienen configuraciones restrictivas.
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "DEBUG ERROR: La entrada POST está vacía."]);
+                exit();
+            }
+
+            // Si llegamos aquí, los datos se recibieron en $_POST
+            if (!isset($_POST['email']) || !isset($_POST['password'])) {
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "DEBUG ERROR: Faltan claves 'email' o 'password' en el POST."]);
+                exit();
+            }
+
+            // DEBUG EXITOSO: Muestra los datos que el servidor ve
+            // QUITA ESTO DESPUÉS DE PROBAR
+            // http_response_code(200);
+            // echo json_encode(["success" => false, "message" => "DEBUG EXITOSO", "received_data" => $_POST]);
+            // exit();
+
+            // --- FIN DE CÓDIGO DE DEPURACIÓN ---
+
+            // Si las pruebas de depuración pasan, descomenta esto para llamar a la función real:
+            $controller = new AuthController();
+            $controller->login();
+        } else {
             http_response_code(405);
             echo json_encode(["success" => false, "message" => "Método no permitido."]);
         }
