@@ -19,7 +19,7 @@ class DataController {
         try {
             // 1. Get Categories and Subcategories
             $category_query = "SELECT c.category_name, s.subcategory_name 
-                               FROM Categories c 
+                               FROM categories c 
                                LEFT JOIN Subcategories s ON c.category_id = s.category_id
                                ORDER BY c.category_name, s.subcategory_name";
             $cat_stmt = $db->prepare($category_query);
@@ -40,7 +40,7 @@ class DataController {
             // 2. Get Technicians (UPDATED QUERY)
             // We now select user_id, full_name, AND email
             $tech_query = "SELECT user_id, full_name, email 
-                           FROM Users 
+                           FROM users 
                            WHERE role = 'technician' 
                            ORDER BY full_name";
                            
