@@ -10,6 +10,9 @@ class AuthController
         header("Access-Control-Allow-Origin: *"); // O restringe a tu dominio
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
+
+
+
         // Verificar que los datos POST existan
         if (!isset($_POST['email']) || !isset($_POST['password'])) {
             http_response_code(400); // Bad Request
@@ -19,7 +22,14 @@ class AuthController
 
         // Obtener conexión a la BD
         $database = new Database();
-        $db = $database->getConnection();
+        $db = $database->getConnection(); // <-- Aquí $db será null si la conexión falla
+
+        // --- VERIFICACIÓN CRÍTICA ---
+        if ($db === null) {
+            http_response_code(500); // 500 ya que es un fallo del servicio
+            echo json_encode(["success" => false, "message" => "Error de servicio. No se pudo conectar a la base de datos."]);
+            return;
+        }
 
         // Instanciar objeto User
         $user = new User($db);
