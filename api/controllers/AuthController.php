@@ -7,53 +7,47 @@ class AuthController
 
     public function login()
     {
-        // Headers (Asumimos que están correctos)
+        // Headers
         header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
-        // --- 1. Leer JSON del Body (Confirmado que funciona) ---
+        // --- 1. Leer JSON del Body ---
         $json_data = file_get_contents("php://input");
         $data = json_decode($json_data, true);
 
-        // Verificar que los datos JSON existan
         if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
-            http_response_code(400); // Bad Request
-            echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido."]);
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido (JSON esperado)."]);
             return;
         }
 
-        // Obtener datos
-        $email = $data['email'];
+        $email = trim($data['email']);
         $password = $data['password'];
-        // --- FIN DE LECTURA DE DATOS ---
 
-        // 2. OBTENER CONEXIÓN A LA BD (Sabemos que funciona)
-        try {
-            // Instanciar la DB. Si falla, el método getConnection() lanza una excepción.
-            $database = new Database();
-            $db = $database->getConnection();
-        } catch (Exception $e) {
-            // Si regresa 500 aquí, es un fallo de conexión.
+        // 2. Obtener conexión a la BD
+        $database = new Database();
+        $db = $database->getConnection();
+
+        if ($db === null) {
             http_response_code(500);
-            echo json_encode(["success" => false, "message" => "ERROR FATAL: Fallo al conectar con la base de datos.", "detail" => $e->getMessage()]);
+            echo json_encode(["success" => false, "message" => "Error de servicio. No se pudo obtener la conexión a la base de datos."]);
             return;
         }
 
         // 3. Instanciar objeto User
-        $user = new User($db); // Usa el modelo User.php
+        $user = new User($db);
 
         // 4. Buscar al usuario por email
-        if (!$user->findByEmail($email)) { // Llama al método findByEmail
-            // Usuario no encontrado
+        if (!$user->findByEmail($email)) { // Devuelve true/false
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
             return;
         }
 
-        // 5. Verificar la contraseña
+        // 5. Verificar la contraseña (El objeto $user ya está poblado)
         if (password_verify($password, $user->password_hash)) {
-            // Contraseña correcta: INICIAR SESIÓN
+            // Contraseña correcta
             if (session_status() == PHP_SESSION_NONE) {
                 session_start();
             }
@@ -66,6 +60,7 @@ class AuthController
             http_response_code(200);
             echo json_encode(["success" => true, "role" => $user->role, "message" => "Inicio de sesión exitoso."]);
         } else {
+            // Contraseña incorrecta
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
         }
