@@ -1,6 +1,4 @@
 <?php
-// api/config/database.php
-
 class Database
 {
     // Variables de conexión a la BD

@@ -1,7 +1,4 @@
 <?php
-// api/controllers/AuthController.php
-
-// Incluir los archivos necesarios
 include_once __DIR__ . '/../config/database.php';
 include_once __DIR__ . '/../models/User.php';
 
@@ -10,12 +7,9 @@ class AuthController
 
     public function login()
     {
-        // Establecer encabezados para respuesta JSON
         header("Access-Control-Allow-Origin: *"); // O restringe a tu dominio
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
-
-
         // Verificar que los datos POST existan
         if (!isset($_POST['email']) || !isset($_POST['password'])) {
             http_response_code(400); // Bad Request
