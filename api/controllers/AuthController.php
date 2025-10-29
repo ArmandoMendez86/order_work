@@ -15,6 +15,15 @@ class AuthController
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
+        // --- INICIO CÓDIGO DE DEPURACIÓN DE ENTORNO ---
+        // Prueba si PHP puede llegar aquí y terminar correctamente
+        $test_result = 1 + 1;
+
+        http_response_code(200);
+        echo json_encode(["success" => true, "role" => "debug", "message" => "DEBUG OK. El problema NO es el entorno PHP ni el enrutamiento. El script llega a la línea " . __LINE__ . " sin fallar."]);
+        return; // Detiene el script aquí
+        // --- FIN CÓDIGO DE DEPURACIÓN DE ENTORNO ---
+
         // Verificar que los datos POST existan
         if (!isset($_POST['email']) || !isset($_POST['password'])) {
             http_response_code(400); // Bad Request
