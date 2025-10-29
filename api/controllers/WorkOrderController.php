@@ -42,7 +42,7 @@ class WorkOrderController
         $stmt->execute();
 
         if (is_array($technician_ids) && !empty($technician_ids)) {
-            $insert_query = "INSERT INTO WorkOrderTechnicians (work_order_id, user_id) VALUES (:work_order_id, :user_id)";
+            $insert_query = "INSERT INTO workordertechnicians (work_order_id, user_id) VALUES (:work_order_id, :user_id)";
             $stmt = $this->db->prepare($insert_query);
 
             foreach ($technician_ids as $user_id) {
