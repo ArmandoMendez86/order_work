@@ -1,6 +1,4 @@
 <?php
-
-// Define la ruta base donde FilePond guardará las subidas permanentes y temporales
 define('UPLOAD_DIR', __DIR__ . '/../../uploads/');
 define('UPLOAD_TEMP_DIR', UPLOAD_DIR . 'temp/'); 
 

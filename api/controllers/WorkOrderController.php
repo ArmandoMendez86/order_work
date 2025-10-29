@@ -5,7 +5,6 @@ include_once __DIR__ . '/../config/database.php';
 include_once __DIR__ . '/../models/WorkOrder.php';
 include_once __DIR__ . '/../models/WorkOrderPhoto.php'; // Incluir modelo de fotos
 
-// Define la ruta base para mover archivos (DEBEN existir estas carpetas: uploads/ y uploads/temp/)
 define('UPLOAD_TEMP_DIR', __DIR__ . '/../../uploads/temp/');
 define('UPLOAD_FINAL_DIR', __DIR__ . '/../../uploads/');
 
