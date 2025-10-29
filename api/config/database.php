@@ -15,20 +15,18 @@ class Database
 
     // Método para obtener la conexión
     // Método para obtener la conexión
-    public function getConnection()
-    {
+   // Método para obtener la conexión
+    public function getConnection() {
         $this->conn = null;
 
         try {
-            // Asegúrate de que todas las credenciales sean correctas (doble verificación)
             $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
             $this->conn->exec("set names utf8");
             // Configura PDO para que lance excepciones en caso de error
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $exception) {
-            // CRÍTICO: No usamos 'echo'. Solo registramos el error si es necesario.
-            error_log("DATABASE CONNECTION ERROR: " . $exception->getMessage());
-            // En este punto, $this->conn sigue siendo null, lo cual es manejado en AuthController.
+        } catch(PDOException $exception) {
+            // CRÍTICO: Lanzamos una nueva excepción capturable con el error de PDO
+            throw new Exception("Database connection failed: " . $exception->getMessage());
         }
 
         return $this->conn;

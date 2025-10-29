@@ -10,7 +10,7 @@ class AuthController
         header("Access-Control-Allow-Origin: *"); // O restringe a tu dominio
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
-        
+
         // Verificar que los datos POST existan
         if (!isset($_POST['email']) || !isset($_POST['password'])) {
             http_response_code(400); // Bad Request
@@ -18,9 +18,37 @@ class AuthController
             return;
         }
 
-        // Obtener conexión a la BD
-        $database = new Database();
-        $db = $database->getConnection();
+        // --- INICIO DE LA PRUEBA DE CONEXIÓN ---
+        try {
+            // Intentar obtener la conexión
+            $database = new Database();
+            $db = $database->getConnection();
+
+            if ($db) {
+                // Si llegamos aquí, la conexión fue exitosa.
+                http_response_code(200);
+                echo json_encode(["success" => true, "message" => "CONEXIÓN EXITOSA.", "detail" => "El problema es la lógica de autenticación posterior."]);
+            } else {
+                // Esto no debería suceder con el try/catch, pero es un fallback
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "Conexión fallida (retornó null)."]);
+            }
+
+            return; // Detenemos el script aquí para reportar el estado
+
+        } catch (Exception $e) {
+            // Captura la excepción lanzada desde database.php
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "CONEXIÓN FALLIDA (FATAL PDO ERROR).",
+                // ¡AQUÍ ESTÁ LA INFORMACIÓN CLAVE!
+                "detail" => $e->getMessage()
+            ]);
+            return; // Detenemos el script aquí
+        }
+        // --- FIN DE LA PRUEBA DE CONEXIÓN ---
+
 
         // Instanciar objeto User
         $user = new User($db);
