@@ -1,10 +1,12 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
+# api/.htaccess
 
-    # Redirige todas las peticiones que NO son archivos o directorios reales
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+# Activa el motor de reescritura de URLs
+RewriteEngine On
 
-    # A tu index.php principal
-    RewriteRule ^(.*)$ index.php/$1 [L,QSA]
-</IfModule>
+# Si el archivo o directorio solicitado existe físicamente, no hagas nada
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Si el archivo o directorio NO existe, redirige TODAS las peticiones a index.php
+# Esto es crucial para que el router PHP maneje las rutas (e.g., /login, /workorders/all)
+RewriteRule ^ index.php [L]
