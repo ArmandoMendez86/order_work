@@ -65,7 +65,10 @@ class User
       $this->user_id = $row['user_id'];
       $this->full_name = $row['full_name'];
       $this->email = $row['email'];
-      $this->password_hash = $row['password_hash'];
+
+      // CRÍTICO: Limpiar el hash de la BD de cualquier espacio/carácter invisible
+      $this->password_hash = trim($row['password_hash']);
+
       $this->role = $row['role'];
 
       return true;
