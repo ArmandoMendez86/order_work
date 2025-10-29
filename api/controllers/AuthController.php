@@ -52,7 +52,7 @@ class AuthController
         }
 
         // 5. Verificar la contraseña
-        if ($user && password_verify($password, $user->password_hash)) {
+        if (password_verify($password, $user->password_hash)) {
             // Contraseña correcta: INICIAR SESIÓN
             if (session_status() == PHP_SESSION_NONE) {
                 session_start();
