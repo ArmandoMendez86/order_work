@@ -5,56 +5,78 @@ include_once __DIR__ . '/../models/User.php';
 class AuthController
 {
 
-   public function login()
+    public function login()
     {
-        // Headers
-        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Origin: *"); 
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
-        $email = null;
-        $password = null;
-        $debug_type = "NONE";
-
-        // --- Intento 1: Leer POST (Formulario Tradicional) ---
-        if (isset($_POST['email']) && isset($_POST['password'])) {
-            $email = $_POST['email'];
-            $password = $_POST['password'];
-            $debug_type = "POST_TRADITIONAL";
-        } 
+        $json_data = file_get_contents("php://input");
+        $data = json_decode($json_data, true);
         
-        // --- Intento 2: Leer JSON (Formato API Moderno) ---
-        if ($email === null) {
-            $json_data = file_get_contents("php://input");
-            $data = json_decode($json_data, true);
-            
-            if (isset($data['email']) && isset($data['password'])) {
-                $email = $data['email'];
-                $password = $data['password'];
-                $debug_type = "JSON_BODY";
-            }
+        // Verificar que los datos JSON existan y sean válidos
+        if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
+            http_response_code(400); // Bad Request
+            echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido (JSON esperado)."]);
+            return;
         }
+
+        // Obtener datos
+        $email = $data['email'];
+        $password = $data['password'];
+        // --- FIN MODIFICACIÓN ---
+
+        // Obtener conexión a la BD
+        // El bloque try/catch de la conexión está ahora en database.php
+        $database = new Database();
+        $db = $database->getConnection();
         
-        // --- REPORTE DE DEPURACIÓN ---
-        if ($email !== null) {
+        // Verificación de conexión (Aunque ya probamos que funciona, se mantiene por seguridad)
+        if ($db === null) {
+            http_response_code(500); 
+            echo json_encode(["success" => false, "message" => "Error de servicio. No se pudo obtener la conexión a la base de datos."]);
+            return;
+        }
+
+        // Instanciar objeto User
+        $user = new User($db);
+
+        // 1. Buscar al usuario por email
+        if (!$user->findByEmail($email)) {
+            // Usuario no encontrado
+            http_response_code(401); // Unauthorized
+            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
+            return;
+        }
+
+        // 2. Verificar la contraseña
+        // $user->password_hash ahora contiene el hash de la BD
+        if (password_verify($password, $user->password_hash)) {
+            // Contraseña correcta
+
+            // 3. Iniciar la sesión de PHP (Si no se hizo en index.php)
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            // 4. Guardar datos en la sesión
+            $_SESSION['user_id'] = $user->user_id;
+            $_SESSION['email'] = $user->email;
+            $_SESSION['full_name'] = $user->full_name;
+            $_SESSION['role'] = $user->role;
+
+            // 5. Enviar respuesta JSON de éxito al frontend
             http_response_code(200);
             echo json_encode([
-                "success" => true, 
-                "message" => "DEBUG: Entrada Exitosa",
-                "received_by" => $debug_type,
-                "email_received" => $email,
-                "password_received" => $password
+                "success" => true,
+                "role" => $user->role,
+                "message" => "Inicio de sesión exitoso."
             ]);
         } else {
-            http_response_code(400); 
-            echo json_encode([
-                "success" => false, 
-                "message" => "DEBUG: No se recibieron email/password en POST ni en JSON.",
-                "post_status" => empty($_POST) ? "EMPTY" : "NOT EMPTY",
-                "json_status" => (isset($data) && $data !== null) ? "INVALID_JSON_KEYS" : "NO_JSON_BODY_OR_INVALID"
-            ]);
+            // Contraseña incorrecta
+            http_response_code(401); // Unauthorized
+            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
         }
-        return; // Detenemos el script aquí
     }
 
     public function logout()
