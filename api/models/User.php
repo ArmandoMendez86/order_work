@@ -4,7 +4,7 @@
 class User
 {
   private $conn;
-  private $table_name = "Users";
+  private $table_name = "users";
 
   // Constructor con la conexión a la BD
   public function __construct($db)
