@@ -10,9 +10,7 @@ class AuthController
         header("Access-Control-Allow-Origin: *"); // O restringe a tu dominio
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
-
-
-
+        
         // Verificar que los datos POST existan
         if (!isset($_POST['email']) || !isset($_POST['password'])) {
             http_response_code(400); // Bad Request
@@ -20,22 +18,9 @@ class AuthController
             return;
         }
 
-        try {
-            $database = new Database();
-            $db = $database->getConnection();
-
-            // Si la conexión falla, database.php lanza una excepción que se captura en el catch
-        } catch (Exception $e) {
-            // --- AQUÍ REVELAMOS EL ERROR FATAL ---
-            http_response_code(500);
-            echo json_encode([
-                "success" => false,
-                "message" => "FATAL ERROR: Fallo de servicio. Por favor, revisa tus credenciales de base de datos.",
-                // Muestra el mensaje de error exacto de PDO:
-                "detail" => $e->getMessage()
-            ]);
-            return;
-        }
+        // Obtener conexión a la BD
+        $database = new Database();
+        $db = $database->getConnection();
 
         // Instanciar objeto User
         $user = new User($db);
