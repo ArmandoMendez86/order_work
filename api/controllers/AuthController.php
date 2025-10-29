@@ -44,12 +44,12 @@ class AuthController
         $user = new User($db); // Usa el modelo User.php
 
         // 4. Buscar al usuario por email
-        if (!$user->findByEmail($email)) { // Llama al método findByEmail
+        /* if (!$user->findByEmail($email)) { // Llama al método findByEmail
             // Usuario no encontrado
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
             return;
-        }
+        } */
 
         // 5. Verificar la contraseña
         if (password_verify($password, $user->password_hash)) {
