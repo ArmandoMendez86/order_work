@@ -7,24 +7,26 @@ class AuthController
 
     public function login()
     {
-        // Headers
+        // Headers (Asumimos que están correctos)
         header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
-        // --- 1. LECTURA Y VALIDACIÓN JSON (Confirmado que funciona) ---
+        // --- 1. Leer JSON del Body (Confirmado que funciona) ---
         $json_data = file_get_contents("php://input");
         $data = json_decode($json_data, true);
 
+        // Verificar que los datos JSON existan
         if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
-            http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Datos de login incompletos. Falla la lectura JSON."]);
+            http_response_code(400); // Bad Request
+            echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido."]);
             return;
         }
 
+        // Obtener datos
         $email = $data['email'];
         $password = $data['password'];
-        // --- FIN LECTURA JSON ---
+        // --- FIN DE LECTURA DE DATOS ---
 
         // 2. OBTENER CONEXIÓN A LA BD (Sabemos que funciona)
         try {
@@ -39,20 +41,35 @@ class AuthController
         }
 
         // 3. Instanciar objeto User
-        $user = new User($db);
+        $user = new User($db); // Usa el modelo User.php
 
-        // --- CHECKPOINT CRÍTICO ANTES DE LA CONSULTA SQL ---
-        http_response_code(200);
-        echo json_encode(["success" => true, "message" => "CHECKPOINT OK: Conexión y Modelo creados. El fallo está en la consulta SQL."]);
-        return;
-        // --- FIN CHECKPOINT CRÍTICO ---
-
-
-        // 4. Buscar al usuario por email (ESTA LÍNEA ES EL PRÓXIMO FALLO)
-        if (!$user->findByEmail($email)) {
-            // ... (rest of the logic) ...
+        // 4. Buscar al usuario por email
+        if (!$user->findByEmail($email)) { // Llama al método findByEmail
+            // Usuario no encontrado
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
+            return;
         }
-        // ... (rest of the logic) ...
+
+        // 5. Verificar la contraseña
+        if (password_verify($password, $user->password_hash)) {
+            // Contraseña correcta: INICIAR SESIÓN
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            $_SESSION['user_id'] = $user->user_id;
+            $_SESSION['email'] = $user->email;
+            $_SESSION['full_name'] = $user->full_name;
+            $_SESSION['role'] = $user->role;
+
+            http_response_code(200);
+            echo json_encode(["success" => true, "role" => $user->role, "message" => "Inicio de sesión exitoso."]);
+        } else {
+            // Contraseña incorrecta
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
+        }
     }
 
     public function logout()
