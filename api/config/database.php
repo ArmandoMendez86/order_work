@@ -22,9 +22,9 @@ class Database
         try {
             // Asegúrate de que todas las credenciales sean correctas (doble verificación)
             $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
-            $this->conn->exec("set names utf8");
+           // $this->conn->exec("set names utf8");
             // Configura PDO para que lance excepciones en caso de error
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+           // $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $exception) {
             // CRÍTICO: No usamos 'echo'. Solo registramos el error si es necesario.
             error_log("DATABASE CONNECTION ERROR: " . $exception->getMessage());
