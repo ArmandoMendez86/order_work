@@ -3,10 +3,15 @@
 
 class Database {
     // Variables de conexión a la BD
-    private $host = "localhost"; // O tu host de BD
-    private $db_name = "order_work"; // El nombre de tu BD
-    private $username = "root"; // Tu usuario de BD
-    private $password = ""; // Tu contraseña de BD
+    /* private $host = "localhost"; 
+    private $db_name = "order_work"; 
+    private $username = "root"; 
+    private $password = "";  */
+
+    private $host = "localhost"; 
+    private $db_name = "u916760597_order_work"; 
+    private $username = "u916760597_order_work"; 
+    private $password = "Order861215#-"; 
     public $conn;
 
     // Método para obtener la conexión
