@@ -7,55 +7,41 @@ class AuthController
 
     public function login()
     {
-        header("Access-Control-Allow-Origin: *"); // O restringe a tu dominio
+        // Headers
+        header("Access-Control-Allow-Origin: *"); 
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
-        // Verificar que los datos POST existan
-        if (!isset($_POST['email']) || !isset($_POST['password'])) {
+        // --- MODIFICACIÓN CLAVE: Leer JSON del Body (Resuelve $_POST vacío) ---
+        $json_data = file_get_contents("php://input");
+        $data = json_decode($json_data, true);
+        
+        // Verificar que los datos JSON existan y sean válidos
+        if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
             http_response_code(400); // Bad Request
-            echo json_encode(["success" => false, "message" => "Datos incompletos."]);
+            echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido (JSON esperado)."]);
             return;
         }
 
-        // --- INICIO DE LA PRUEBA DE CONEXIÓN ---
-        try {
-            // Intentar obtener la conexión
-            $database = new Database();
-            $db = $database->getConnection();
+        // Obtener datos
+        $email = $data['email'];
+        $password = $data['password'];
+        // --- FIN MODIFICACIÓN ---
 
-            if ($db) {
-                // Si llegamos aquí, la conexión fue exitosa.
-                http_response_code(200);
-                echo json_encode(["success" => true, "message" => "CONEXIÓN EXITOSA.", "detail" => "El problema es la lógica de autenticación posterior."]);
-            } else {
-                // Esto no debería suceder con el try/catch, pero es un fallback
-                http_response_code(500);
-                echo json_encode(["success" => false, "message" => "Conexión fallida (retornó null)."]);
-            }
-
-            return; // Detenemos el script aquí para reportar el estado
-
-        } catch (Exception $e) {
-            // Captura la excepción lanzada desde database.php
-            http_response_code(500);
-            echo json_encode([
-                "success" => false,
-                "message" => "CONEXIÓN FALLIDA (FATAL PDO ERROR).",
-                // ¡AQUÍ ESTÁ LA INFORMACIÓN CLAVE!
-                "detail" => $e->getMessage()
-            ]);
-            return; // Detenemos el script aquí
+        // Obtener conexión a la BD
+        // El bloque try/catch de la conexión está ahora en database.php
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        // Verificación de conexión (Aunque ya probamos que funciona, se mantiene por seguridad)
+        if ($db === null) {
+            http_response_code(500); 
+            echo json_encode(["success" => false, "message" => "Error de servicio. No se pudo obtener la conexión a la base de datos."]);
+            return;
         }
-        // --- FIN DE LA PRUEBA DE CONEXIÓN ---
-
 
         // Instanciar objeto User
         $user = new User($db);
-
-        // Obtener datos del POST
-        $email = $_POST['email'];
-        $password = $_POST['password'];
 
         // 1. Buscar al usuario por email
         if (!$user->findByEmail($email)) {
@@ -70,7 +56,7 @@ class AuthController
         if (password_verify($password, $user->password_hash)) {
             // Contraseña correcta
 
-            // 3. Iniciar la sesión de PHP
+            // 3. Iniciar la sesión de PHP (Si no se hizo en index.php)
             if (session_status() == PHP_SESSION_NONE) {
                 session_start();
             }
@@ -94,8 +80,6 @@ class AuthController
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
         }
     }
-
-    // Dentro de la clase AuthController
 
     public function logout()
     {
@@ -156,5 +140,4 @@ class AuthController
             ]);
         }
     }
-    // --- FIN DEL NUEVO MÉTODO ---
 }
