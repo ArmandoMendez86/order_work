@@ -18,9 +18,7 @@ class Database
         $this->conn = null;
 
         try {
-            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
-            //$this->conn->exec("set names utf8");
-            // Configura PDO para que lance excepciones en caso de error
+            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8", $this->username, $this->password);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $exception) {
             // CRÍTICO: Lanzamos una nueva excepción capturable con el error de PDO
