@@ -23,8 +23,8 @@ class WorkOrder
                     tech.full_name AS technician_name
                   FROM
                     " . $this->table_name . " wo
-                    LEFT JOIN Categories c ON wo.category_id = c.category_id
-                    LEFT JOIN Users tech ON wo.assigned_to_user_id = tech.user_id
+                    LEFT JOIN categories c ON wo.category_id = c.category_id
+                    LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
                   ORDER BY
                     wo.created_at DESC";
 
@@ -45,7 +45,7 @@ class WorkOrder
                     c.category_name
                   FROM
                     " . $this->table_name . " wo
-                    LEFT JOIN Categories c ON wo.category_id = c.category_id
+                    LEFT JOIN categories c ON wo.category_id = c.category_id
                   WHERE
                     wo.assigned_to_user_id = :user_id
                   ORDER BY
@@ -90,9 +90,9 @@ class WorkOrder
                          s.subcategory_name,
                          tech.email AS assign_to_email
                   FROM " . $this->table_name . " wo
-                  LEFT JOIN Categories c ON wo.category_id = c.category_id
-                  LEFT JOIN Subcategories s ON wo.subcategory_id = s.subcategory_id
-                  LEFT JOIN Users tech ON wo.assigned_to_user_id = tech.user_id
+                  LEFT JOIN categories c ON wo.category_id = c.category_id
+                  LEFT JOIN subcategories s ON wo.subcategory_id = s.subcategory_id
+                  LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
                   WHERE wo.work_order_id = ?
                   LIMIT 1";
 
@@ -125,7 +125,6 @@ class WorkOrder
                     activity_description = :activity_description,
                     is_emergency = :is_emergency
                     ";
-    // Nota: Las firmas y campos del técnico se insertan como NULL/default
 
     $stmt = $this->conn->prepare($query);
 

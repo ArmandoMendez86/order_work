@@ -83,8 +83,8 @@ class WorkOrderPdfController
     private function getInvolvedTechnicianNames($work_order_id)
     {
         $query = "SELECT u.full_name 
-                  FROM WorkOrderTechnicians wot
-                  JOIN Users u ON wot.user_id = u.user_id
+                  FROM workordertechnicians wot
+                  JOIN users u ON wot.user_id = u.user_id
                   WHERE wot.work_order_id = ?";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$work_order_id]);

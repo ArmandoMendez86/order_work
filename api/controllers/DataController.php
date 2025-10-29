@@ -20,7 +20,7 @@ class DataController {
             // 1. Get Categories and Subcategories
             $category_query = "SELECT c.category_name, s.subcategory_name 
                                FROM categories c 
-                               LEFT JOIN Subcategories s ON c.category_id = s.category_id
+                               LEFT JOIN subcategories s ON c.category_id = s.category_id
                                ORDER BY c.category_name, s.subcategory_name";
             $cat_stmt = $db->prepare($category_query);
             $cat_stmt->execute();

@@ -37,7 +37,7 @@ class WorkOrderController
     // Función para sincronizar técnicos involucrados (tags)
     private function syncInvolvedTechnicians($work_order_id, $technician_ids)
     {
-        $delete_query = "DELETE FROM WorkOrderTechnicians WHERE work_order_id = :work_order_id";
+        $delete_query = "DELETE FROM workordertechnicians WHERE work_order_id = :work_order_id";
         $stmt = $this->db->prepare($delete_query);
         $stmt->bindParam(':work_order_id', $work_order_id);
         $stmt->execute();
@@ -177,7 +177,7 @@ class WorkOrderController
 
         if ($data) {
             // Obtener Involved Technicians (Tags)
-            $tech_query = "SELECT user_id FROM WorkOrderTechnicians WHERE work_order_id = ?";
+            $tech_query = "SELECT user_id FROM workordertechnicians WHERE work_order_id = ?";
             $stmt = $this->db->prepare($tech_query);
             $stmt->execute([$id]);
             $data['involved_technicians'] = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
@@ -214,7 +214,7 @@ class WorkOrderController
             return;
         }
 
-        $user_stmt = $this->db->prepare("SELECT user_id FROM Users WHERE email = ? AND role = 'technician'");
+        $user_stmt = $this->db->prepare("SELECT user_id FROM users WHERE email = ? AND role = 'technician'");
         $user_stmt->execute([$data['assignToEmail']]);
         $tech = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -282,7 +282,7 @@ class WorkOrderController
             // LÓGICA DE ACTUALIZACIÓN DEL ADMIN
 
             // 1. Obtener el ID del técnico
-            $user_stmt = $this->db->prepare("SELECT user_id FROM Users WHERE email = ? AND role = 'technician'");
+            $user_stmt = $this->db->prepare("SELECT user_id FROM users WHERE email = ? AND role = 'technician'");
             $user_stmt->execute([$data['assignToEmail']]);
             $tech = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -360,7 +360,7 @@ class WorkOrderController
         $safe_message = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
 
         // Consulta para actualizar y concatenar el nuevo log al campo activity_description
-        $query = "UPDATE WorkOrders 
+        $query = "UPDATE workorders 
               SET activity_description = CONCAT(IFNULL(activity_description, ''), '\n', :message)
               WHERE work_order_id = :work_order_id";
 
