@@ -1,0 +1,154 @@
+/*
+ * Archivo: assets/css/main.css
+ * Tema: Estilos para Work Order - Pride Enterprise Inc.
+ */
+
+/* ---------------------------------------------------- */
+/* 1. Definición de la Paleta (NUEVOS VALORES BASADOS EN EL LOGO) */
+/* ---------------------------------------------------- */
+:root {
+    /* Color principal: Azul Marino Profundo del logo */
+    --pride-primary: #1A237E; 
+    
+    /* Color secundario: Gris Lavanda Claro del logo (usado para fondos y bordes) */
+    --pride-secondary: #E8EAF6; 
+    
+    /* Color de Advertencia/Logout: Tono Ámbar/Amarillo cálido */
+    --pride-warning: #FFB300; 
+    
+    /* Color Oscuro: Azul Oscuro para Navbar, texto y títulos (mejor contraste) */
+    --pride-dark: #263238; 
+    
+    --pride-success: #28a745; /* Mantenido para estado "Completed" */
+    --pride-info: #17a2b8;
+}
+
+body {
+    background-color: #f8f9fa; /* Fondo gris muy claro */
+    font-family: 'Arial', sans-serif;
+    color: var(--pride-dark);
+}
+
+/* ---------------------------------------------------- */
+/* 2. Layout y Contenedores */
+/* ---------------------------------------------------- */
+
+.card {
+    border: none;
+    border-radius: 12px; /* Bordes más suaves */
+    /* Sombra más marcada para sensación de 'elevación' */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05), 0 6px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    color: var(--pride-dark);
+    font-weight: 700;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* ---------------------------------------------------- */
+/* 3. Estilos de Acordeón (Secciones del Formulario) */
+/* ---------------------------------------------------- */
+
+.accordion-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px !important;
+    margin-bottom: 15px; /* Espacio entre secciones */
+    overflow: hidden;
+}
+
+.accordion-header .accordion-button {
+    background-color: var(--pride-secondary); /* Fondo Gris Lavanda */
+    color: var(--pride-dark);
+    font-weight: 600;
+    padding: 15px;
+    border-bottom: none;
+    transition: background-color 0.2s ease;
+}
+
+/* Estado activo/abierto del acordeón */
+.accordion-header .accordion-button:not(.collapsed) {
+    background-color: var(--pride-primary); /* Azul Marino */
+    color: white;
+    box-shadow: none;
+}
+
+.accordion-header .accordion-button:not(.collapsed) .bi {
+    color: white;
+}
+
+.accordion-body {
+    padding: 20px;
+}
+
+/* Títulos internos de sección (H5) */
+.accordion-body h5.text-primary {
+    color: var(--pride-dark) !important; /* Usar Azul Oscuro para mejor legibilidad */
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-left: 10px;
+    border-left: 4px solid var(--pride-primary); /* Línea de color Azul Marino */
+}
+
+
+/* ---------------------------------------------------- */
+/* 4. Inputs y Select2 */
+/* ---------------------------------------------------- */
+
+.form-control, .form-select, .select2-container .select2-selection--single {
+    border-radius: 6px;
+    border-color: #ced4da;
+}
+
+.form-label {
+    font-weight: 600;
+    /* Cambiamos el color de la etiqueta a Azul Oscuro para mejor contraste */
+    color: var(--pride-dark); 
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+}
+
+/* Estilo para Select2 (select de categoría, subcategoría, técnicos) */
+.select2-container--bootstrap-5 .select2-selection--single, 
+.select2-container--bootstrap-5 .select2-selection--multiple {
+    min-height: calc(1.5em + 0.75rem + 2px); /* Alineación con inputs */
+    border-radius: 6px !important;
+}
+
+/* ---------------------------------------------------- */
+/* 5. Firmas (Signature Pad) */
+/* ---------------------------------------------------- */
+
+.signature-pad-container {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: #fff;
+    height: 150px; /* Altura fija para firmas */
+    width: 100%;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+#techSignatureCanvas, #managerSignatureCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* ---------------------------------------------------- */
+/* 6. FilePond */
+/* ---------------------------------------------------- */
+
+.filepond--root {
+    /* Altura estándar de 150px (MODIFICADO AQUÍ) */
+    height: 300px; 
+    /* Forzar el scroll interno si se añaden muchas imágenes */
+    overflow: auto; 
+    margin-bottom: 0;
+}
+
+.filepond--panel-root {
+    background-color: var(--pride-secondary); /* Usar el color secundario de marca */
+    border-radius: 6px;
+}

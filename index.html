@@ -4,260 +4,382 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Work Order - Pride Enterprice Inc.</title>
+    <title>Work Order - Pride Enterprice Inc.</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet">
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css"
+        rel="stylesheet">
 
-    <link rel="stylesheet" href="main.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+    <link rel="stylesheet" href="assets/css/main.css">
 </head>
 
 <body>
 
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-briefcase-fill me-2"></i> Pride Enterprice Inc.
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="navbar-text me-3" id="loggedInUserName">
+                    Loading...
+                </span>
+                <button class="btn btn-warning" id="logoutButtonForm">
+                    <i class="bi bi-box-arrow-right"></i> Log Out
+                </button>
+            </div>
+        </div>
+    </nav>
     <div class="container my-5">
-        <div class="card shadow-lg p-4">
-            <h1 class="card-title text-center mb-4">
-                <i class="bi bi-briefcase-fill me-2"></i> Create New Work Order
-            </h1>
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-8">
+                <div class="card shadow-lg p-4">
+                    <h1 class="card-title text-center mb-4">
+                        <img src="assets//img/pride.jpg" alt="" width="100"> Work Order
+                    </h1>
 
-            <form id="workOrderForm" novalidate>
-                <div class="row mb-4 border-bottom pb-3">
-                    <div class="col-md-6">
-                        <p class="mb-1"><strong>Pride Enterprice Inc.</strong></p>
-                        <p class="mb-1">126 Ipswich Road</p>
-                        <p class="mb-1">Boxford MA 01921</p>
-                        <p class="mb-0">781-241-3543</p>
-                    </div>
-                    <div class="col-md-6 text-md-end">
-                        <div class="input-group mb-2">
-                            <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                            <input type="text" class="form-control" id="serviceDate" placeholder="Service Date" readonly
-                                required>
+                    <form id="workOrderForm" novalidate>
+                        <div class="row mb-4 border-bottom pb-3">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Pride Enterprice Inc.</strong></p>
+                                <p class="mb-1">126 Ipswich Road</p>
+                                <p class="mb-1">Boxford MA 01921</p>
+                                <p class="mb-0">781-241-3543</p>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                    <input type="text" class="form-control" id="serviceDate" name="serviceDate"
+                                        placeholder="Service Date" readonly required>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-receipt"></i></span>
+                                    <input type="text" class="form-control" id="workOrderNumber" name="workOrderNumber"
+                                        placeholder="Work Order No." readonly>
+                                </div>
+                            </div>
                         </div>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-receipt"></i></span>
-                            <input type="text" class="form-control" id="workOrderNumber" placeholder="Work Order No."
-                                value="WO-2024-001" readonly>
-                        </div>
-                    </div>
-                </div>
 
-                <h5 class="mb-3 mt-4 text-primary"><i class="bi bi-person-badge"></i> Customer Details</h5>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label for="customerName" class="form-label">Customer Name</label>
-                        <input type="text" class="form-control" id="customerName" value="7-Eleven store#" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="city" class="form-label">City</label>
-                        <input type="text" class="form-control" id="city" value="Boxford" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="phoneNumber" class="form-label">Phone Number</label>
-                        <input type="tel" class="form-control" id="phoneNumber" value="781-555-1234" required>
-                    </div>
-                    <div class="col-md-12">
-                        <label for="customerType" class="form-label">Customer Type</label>
-                        <input type="text" class="form-control" id="customerType" value="Gas Station" required>
-                    </div>
-                </div>
+                        <div class="accordion" id="workOrderAccordion">
 
-                <hr class="my-4">
+                            <div class="accordion-item" id="adminSection">
+                                <h2 class="accordion-header" id="headingAdmin">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseAdmin" aria-expanded="true"
+                                        aria-controls="collapseAdmin">
+                                        <i class="bi bi-person-badge me-2"></i> 1. Customer & Service Details
+                                    </button>
+                                </h2>
+                                <div id="collapseAdmin" class="accordion-collapse collapse show"
+                                    aria-labelledby="headingAdmin" data-bs-parent="#workOrderAccordion">
+                                    <div class="accordion-body">
 
-                <h5 class="mb-3 text-primary"><i class="bi bi-list-task"></i> Work Details & Status</h5>
-                <div class="mb-3">
-                    <label class="form-label d-block">Work Stage</label>
-                    <div class="btn-group" role="group">
-                        <input type="radio" class="btn-check" name="workStage" id="stageInProgress" value="In progress"
-                            autocomplete="off" checked>
-                        <label class="btn btn-outline-warning" for="stageInProgress">In Progress</label>
+                                        <h5 class="mb-3 text-primary">Customer Details</h5>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-6">
+                                                <label for="customerName" class="form-label">Customer Name</label>
+                                                <input type="text" class="form-control" id="customerName"
+                                                    name="customerName" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="city" class="form-label">City</label>
+                                                <input type="text" class="form-control" id="city" name="city" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="phoneNumber" class="form-label">Phone Number</label>
+                                                <input type="tel" class="form-control" id="phoneNumber"
+                                                    name="phoneNumber" required>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <label for="customerType" class="form-label">Customer Type</label>
+                                                <input type="text" class="form-control" id="customerType"
+                                                    name="customerType" required>
+                                            </div>
+                                        </div>
 
-                        <input type="radio" class="btn-check" name="workStage" id="stagePending" value="Pending"
-                            autocomplete="off">
-                        <label class="btn btn-outline-secondary" for="stagePending">Pending</label>
+                                        <hr class="my-4">
+                                        <h5 class="mb-3 text-primary">Activity Section</h5>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-12">
+                                                <textarea class="form-control" id="activityDescription"
+                                                    name="activityDescription" rows="3"
+                                                    placeholder="Description of the activity to perform (Admin)"></textarea>
+                                            </div>
+                                        </div>
 
-                        <input type="radio" class="btn-check" name="workStage" id="stageCompleted" value="Completed"
-                            autocomplete="off">
-                        <label class="btn btn-outline-success" for="stageCompleted">Completed</label>
-                    </div>
-                </div>
+                                        <hr class="my-4">
+                                        <h5 class="mb-3 text-primary">Service & Assignment</h5>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label for="category" class="form-label">Category</label>
-                        <select class="form-select" id="category" required>
-                            <option value="">Select a Category</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="subcategory" class="form-label">Subcategory</label>
-                        <select class="form-select" id="subcategory" required disabled>
-                            <option value="">Select a Subcategory</option>
-                        </select>
-                    </div>
-                    <div class="col-md-12">
-                        <label for="materials" class="form-label">Materials Used</label>
-                        <input type="text" class="form-control" id="materials"
-                            placeholder="E.g., PVC pipes, elbows, tees"
-                            value="Electric Pipes & PVC pipes, elbows, tees, couplings" required>
-                    </div>
-                    <div class="col-md-12">
-                        <label for="workDescription" class="form-label">Description of Work Performed</label>
-                        <textarea class="form-control" id="workDescription" rows="3"
-                            required>Installation and review of electrical and PVC piping system at the service station.</textarea>
-                    </div>
-                </div>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-6">
+                                                <label for="category" class="form-label">Category</label>
+                                                <select class="form-select" id="category" name="category" required
+                                                    style="width: 100%"></select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="subcategory" class="form-label">Subcategory</label>
+                                                <select class="form-select" id="subcategory" name="subcategory"
+                                                    style="width: 100%" disabled></select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="assignToEmail" class="form-label">Technician Assigned or
+                                                    Responsible</label>
+                                                <select class="form-select" id="assignToEmail" name="assignToEmail"
+                                                    required style="width: 100%">
+                                                    <option value="">Select a Technician</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="totalCost" class="form-label">Total Cost ($)</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" class="form-control" id="totalCost"
+                                                        name="totalCost" placeholder="Amount" step="0.01" required
+                                                        min="0">
+                                                </div>
+                                            </div>
+                                        </div>
 
-                <hr class="my-4">
+                                    </div>
+                                </div>
+                            </div>
 
-                <h5 class="mb-3 text-primary"><i class="bi bi-camera"></i> Before & After Photos</h5>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label for="photosBefore" class="form-label">Photos **Before** Work</label>
-                        <input type="file" class="filepond" id="photosBefore" name="photosBefore" multiple
-                            accept="image/*">
-                        <small class="form-text text-muted">Upload images showing the initial condition.</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="photosAfter" class="form-label">Photos **After** Work</label>
-                        <input type="file" class="filepond" id="photosAfter" name="photosAfter" multiple
-                            accept="image/*">
-                        <small class="form-text text-muted">Upload images showing the completed work.</small>
-                    </div>
-                </div>
+                            <div class="accordion-item" id="techSection">
+                                <h2 class="accordion-header" id="headingTech">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseTech" aria-expanded="false"
+                                        aria-controls="collapseTech">
+                                        <i class="bi bi-tools me-2"></i> 2. Technician Report
+                                    </button>
+                                </h2>
+                                <div id="collapseTech" class="accordion-collapse collapse show"
+                                    aria-labelledby="headingTech" data-bs-parent="#workOrderAccordion">
+                                    <div class="accordion-body">
 
-                <hr class="my-4">
+                                        <h5 class="mb-3 text-primary">Work Status & Details</h5>
+                                        <div class="mb-3">
+                                            <label class="form-label d-block">Work Stage</label>
+                                            <div class="btn-group" role="group">
+                                                <input type="radio" class="btn-check" name="workStage" id="stagePending"
+                                                    value="Pending" autocomplete="off" checked>
+                                                <label class="btn btn-outline-secondary"
+                                                    for="stagePending">Pending</label>
 
-                <h5 class="mb-3 text-primary"><i class="bi bi-clock-history"></i> Time & Cost Tracking</h5>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <label for="startDate" class="form-label">Start Date/Time</label>
-                        <input type="text" class="form-control" id="startDate" placeholder="Start Date/Time" readonly
-                            required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="endDate" class="form-label">End Date/Time</label>
-                        <input type="text" class="form-control" id="endDate" placeholder="End Date/Time" readonly
-                            required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="totalHours" class="form-label">Total Hours</label>
-                        <input type="number" class="form-control" id="totalHours" value="24" required min="0">
-                    </div>
-                </div>
+                                                <input type="radio" class="btn-check" name="workStage"
+                                                    id="stageInProgress" value="In Progress" autocomplete="off">
+                                                <label class="btn btn-outline-warning" for="stageInProgress">In
+                                                    Progress</label>
 
-                <div class="mb-3">
-                    <label class="form-label d-block">Estimated Duration</label>
-                    <div class="btn-group" role="group">
-                        <input type="radio" class="btn-check" name="estimatedDuration" id="duration4"
-                            value="Less than 4 hrs" autocomplete="off">
-                        <label class="btn btn-outline-info" for="duration4">
-                            < 4 hrs</label>
+                                                <input type="radio" class="btn-check" name="workStage"
+                                                    id="stageCompleted" value="Completed" autocomplete="off">
+                                                <label class="btn btn-outline-success"
+                                                    for="stageCompleted">Completed</label>
+                                            </div>
+                                        </div>
 
-                                <input type="radio" class="btn-check" name="estimatedDuration" id="duration8"
-                                    value="Less than 8 hrs" autocomplete="off">
-                                <label class="btn btn-outline-info" for="duration8">
-                                    < 8 hrs</label>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-12">
+                                                <label for="materials" class="form-label">Materials Used</label>
+                                                <input type="text" class="form-control" id="materials" name="materials"
+                                                    placeholder="E.g., PVC pipes, elbows, tees">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <label for="workDescription" class="form-label">Description of Work
+                                                    Performed</label>
+                                                <textarea class="form-control" id="workDescription"
+                                                    name="workDescription" rows="3"></textarea>
+                                            </div>
+                                        </div>
 
-                                        <input type="radio" class="btn-check" name="estimatedDuration" id="duration16"
-                                            value="Less than 16 hrs" autocomplete="off">
-                                        <label class="btn btn-outline-info" for="duration16">
-                                            < 16 hrs</label>
+                                        <hr class="my-4">
+                                        <h5 class="mb-3 text-primary">Before & After Photos</h5>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-6">
+                                                <label for="photosBefore" class="form-label">Photos **Before**
+                                                    Work</label>
+                                                <input type="file" class="filepond" id="photosBefore" multiple
+                                                    accept="image/*" name="file">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="photosAfter" class="form-label">Photos **After**
+                                                    Work</label>
+                                                <input type="file" class="filepond" id="photosAfter" multiple
+                                                    accept="image/*" name="file">
+                                            </div>
+                                        </div>
 
+                                        <hr class="my-4">
+                                        <h5 class="mb-3 text-primary">Time Tracking & Conditions</h5>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-4">
+                                                <label for="startDate" class="form-label">Start Date/Time</label>
+                                                <input type="text" class="form-control" id="startDate" name="startDate"
+                                                    placeholder="Start Date/Time" readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="endDate" class="form-label">End Date/Time</label>
+                                                <input type="text" class="form-control" id="endDate" name="endDate"
+                                                    placeholder="End Date/Time" readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="totalHours" class="form-label">Total Hours</label>
+                                                <input type="number" class="form-control" id="totalHours"
+                                                    name="totalHours" min="0" step="0.5">
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label d-block">Estimated Duration</label>
+                                            <div class="btn-group" role="group">
                                                 <input type="radio" class="btn-check" name="estimatedDuration"
-                                                    id="duration24" value="Less than 24 hrs" autocomplete="off" checked>
-                                                <label class="btn btn-outline-info" for="duration24">
-                                                    < 24 hrs</label>
-                    </div>
-                </div>
+                                                    id="duration4" value="Less than 4 hrs" autocomplete="off">
+                                                <label class="btn btn-outline-info" for="duration4">
+                                                    < 4 hrs</label>
+                                                        <input type="radio" class="btn-check" name="estimatedDuration"
+                                                            id="duration8" value="Less than 8 hrs" autocomplete="off">
+                                                        <label class="btn btn-outline-info" for="duration8">
+                                                            < 8 hrs</label>
+                                                                <input type="radio" class="btn-check"
+                                                                    name="estimatedDuration" id="duration16"
+                                                                    value="Less than 16 hrs" autocomplete="off">
+                                                                <label class="btn btn-outline-info" for="duration16">
+                                                                    < 16 hrs</label>
+                                                                        <input type_radio" class="btn-check"
+                                                                            name="estimatedDuration" id="duration24"
+                                                                            value="Less than 24 hrs" autocomplete="off">
+                                                                        <label class="btn btn-outline-info"
+                                                                            for="duration24">
+                                                                            < 24 hrs</label>
+                                            </div>
+                                        </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="workAfter5PM" checked>
-                            <label class="form-check-label" for="workAfter5PM">Work performed after 5:00 PM</label>
+                                        <div class="row mb-4">
+                                            <div class="col-md-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="workAfter5PM"
+                                                        name="workAfter5PM">
+                                                    <label class="form-check-label" for="workAfter5PM">Work after 5:00
+                                                        PM</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="workWeekend"
+                                                        name="workWeekend">
+                                                    <label class="form-check-label" for="workWeekend">Weekend
+                                                        Work</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="isEmergency"
+                                                        name="isEmergency">
+                                                    <label class="form-check-label" for="isEmergency">Emergency</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item" id="signatureSection">
+                                <h2 class="accordion-header" id="headingSignatures">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseSignatures" aria-expanded="false"
+                                        aria-controls="collapseSignatures">
+                                        <i class="bi bi-pen-fill me-2"></i> 3. Team & Signatures
+                                    </button>
+                                </h2>
+                                <div id="collapseSignatures" class="accordion-collapse collapse"
+                                    aria-labelledby="headingSignatures" data-bs-parent="#workOrderAccordion">
+                                    <div class="accordion-body">
+
+                                        <h5 class="mb-3 text-primary">Involved Team</h5>
+                                        <div class="mb-4">
+                                            <label for="assignedTechnicians" class="form-label">Involved Technicians
+                                                (Team)</label>
+                                            <select class="form-select" id="assignedTechnicians"
+                                                name="assignedTechnicians[]" multiple style="width: 100%">
+                                            </select>
+                                            <small class="form-text text-muted">Select technicians who
+                                                participated.</small>
+                                        </div>
+
+                                        <hr class="my-4">
+                                        <h5 class="mb-3 text-primary">Signatures</h5>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Technician Signature</label>
+                                                <div class="signature-pad-container mb-2">
+                                                    <canvas id="techSignatureCanvas"></canvas>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    id="clearTechSignature">Clear Signature</button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="techSignatureName" class="form-label">Technician Name
+                                                    (Print)</label>
+                                                <input type="text" class="form-control" id="techSignatureName"
+                                                    name="techSignatureName" placeholder="Full Name" required>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">Manager/Cashier Signature</label>
+                                                <div class="signature-pad-container mb-2">
+                                                    <canvas id="managerSignatureCanvas"></canvas>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    id="clearManagerSignature">Clear Signature</button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="managerSignatureName" class="form-label">Manager/Cashier
+                                                    Name
+                                                    (Print)</label>
+                                                <input type="text" class="form-control" id="managerSignatureName"
+                                                    name="managerSignatureName" placeholder="Full Name">
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="workWeekend">
-                            <label class="form-check-label" for="workWeekend">Weekend Work</label>
+                        <div class="d-grid gap-2 mt-4">
+                            <a href="#" id="downloadPdfButton" class="btn btn-secondary btn-lg d-none" target="_blank">
+                                <i class="bi bi-file-pdf-fill"></i> Download Work Order PDF
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-send-fill"></i> Submit
+                                Work
+                                Order</button>
+                            <button type="button" class="btn btn-outline-secondary" id="goToDashboardButton"><i
+                                    class="bi bi-arrow-left-square"></i> Go to Dashboard</button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-
-                <div class="mb-4">
-                    <label for="totalCost" class="form-label">Total Cost ($)</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" id="totalCost" placeholder="Amount" value="1500.00"
-                            step="0.01" required min="0">
-                    </div>
-                </div>
-
-                <hr class="my-4">
-
-                <h5 class="mb-3 text-primary"><i class="bi bi-person-gear"></i> Technician Assignment & Signatures</h5>
-
-                <div class="mb-3">
-                    <label for="assignedTechnicians" class="form-label">Involved Technicians</label>
-                    <select class="form-select" id="assignedTechnicians" multiple required>
-                    </select>
-                    <small class="form-text text-muted">Select multiple technicians (Ctrl/Cmd + click).</small>
-                </div>
-
-                <div class="mb-4">
-                    <label for="assignToEmail" class="form-label">Assign To (Email)</label>
-                    <input type="email" class="form-control" id="assignToEmail" value="alanavidsilva@yahoo.com.mx"
-                        required>
-                </div>
-
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label for="techSignature" class="form-label">Technician Signature</label>
-                        <input type="text" class="form-control" id="techSignature" placeholder="Full Name"
-                            value="Juan Perez" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="techSignatureTime" class="form-label">Tech Signature Time</label>
-                        <input type="text" class="form-control" id="techSignatureTime" placeholder="Time" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="managerSignature" class="form-label">Manager/Cashier Signature</label>
-                        <input type="text" class="form-control" id="managerSignature" placeholder="Full Name"
-                            value="John Doe">
-                    </div>
-                    <div class="col-md-6">
-                        <label for="signatureDate" class="form-label">Manager Signature Date</label>
-                        <input type="text" class="form-control" id="signatureDate" placeholder="Date" readonly>
-                    </div>
-                </div>
-
-                <div class="d-grid gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-send-fill"></i> Generate Work
-                        Order</button>
-                    <button type="button" class="btn btn-outline-secondary" id="resetFormButton"><i
-                            class="bi bi-arrow-counterclockwise"></i> Reset Form</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://unpkg.com/filepond/dist/filepond.js"></script> 
+    <script src="https://unpkg.com/filepond/dist/filepond.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
-    <script src="main.js"></script>
+    <script src="assets/js/main.js"></script>
 </body>
 
 </html>
