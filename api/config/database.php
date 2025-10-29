@@ -11,7 +11,7 @@ class Database {
     private $host = "localhost"; 
     private $db_name = "u916760597_order_work"; 
     private $username = "u916760597_order_work"; 
-    private $password = "Order861215#-"; 
+    private $password = "Order861215"; 
     public $conn;
 
     // Método para obtener la conexión
