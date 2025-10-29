@@ -126,21 +126,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const pondBefore = FilePond.create(document.getElementById('photosBefore'));
     const pondAfter = FilePond.create(document.getElementById('photosAfter'));
 
-    // Flatpickr Config
-    flatpickr("#serviceDate", {
-        dateFormat: "Y-m-d",
-        disableMobile: true // <-- FUERZA EL CALENDARIO DE ESCRITORIO EN MÓVIL
-    });
-    flatpickr("#startDate", {
-        dateFormat: "Y-m-d H:i",
-        enableTime: true,
-        disableMobile: true // <-- FUERZA EL CALENDARIO DE ESCRITORIO EN MÓVIL
-    });
-    flatpickr("#endDate", {
-        dateFormat: "Y-m-d H:i",
-        enableTime: true,
-        disableMobile: true // <-- FUERZA EL CALENDARIO DE ESCRITORIO EN MÓVIL
-    });
+    // Flatpickr Config (con retraso para móviles)
+    setTimeout(() => {
+        flatpickr("#serviceDate", {
+            dateFormat: "Y-m-d",
+            disableMobile: true
+        });
+        flatpickr("#startDate", {
+            dateFormat: "Y-m-d H:i",
+            enableTime: true,
+            disableMobile: true
+        });
+        flatpickr("#endDate", {
+            dateFormat: "Y-m-d H:i",
+            enableTime: true,
+            disableMobile: true
+        });
+    }, 100); // 100ms de retraso
 
     // --- 2. INITIALIZATION FUNCTIONS ---
     function initSelect2() {
