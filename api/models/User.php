@@ -20,7 +20,6 @@ class User
   }
 
   // Método para buscar un usuario por Email
-  // Método para buscar un usuario por Email
   public function findByEmail($email)
   {
     $query = "SELECT
@@ -31,31 +30,23 @@ class User
                     email = :email
                   LIMIT 1";
 
-    // Preparar la consulta
-    // Asegúrate de que $this->conn no es null (ya lo verificamos indirectamente)
     try {
       $stmt = $this->conn->prepare($query);
     } catch (PDOException $e) {
-      // Esto atrapará errores como nombres de tabla incorrectos
       error_log("SQL Prepare Error (findByEmail): " . $e->getMessage());
       return false;
     }
 
     // Limpiar datos (sanitizar)
     $clean_email = htmlspecialchars(strip_tags($email));
-
-    // Vincular el parámetro
     $stmt->bindParam(':email', $clean_email);
 
-    // Ejecutar la consulta
     try {
       $stmt->execute();
     } catch (PDOException $e) {
-      // Esto atrapará errores como nombres de columna incorrectos
       error_log("SQL Execute Error (findByEmail): " . $e->getMessage());
       return false;
     }
-
 
     if ($stmt->rowCount() > 0) {
       // Obtener el registro
@@ -66,14 +57,15 @@ class User
       $this->full_name = $row['full_name'];
       $this->email = $row['email'];
 
-      // CRÍTICO: Limpiar el hash de la BD de cualquier espacio/carácter invisible
+      // CRÍTICO: Limpiar el hash de la BD (Solución para MariaDB vs MySQL 8)
       $this->password_hash = trim($row['password_hash']);
-
+      
       $this->role = $row['role'];
 
-      return $row;
+      return true; // Devolvemos true si se encontró y se poblaron los datos
     }
 
     return false;
   }
-}
+} // <-- Solo una llave aquí
+?>
