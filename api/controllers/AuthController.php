@@ -7,77 +7,56 @@ class AuthController
 
     public function login()
     {
+        // Headers (Aseguran que la respuesta es JSON)
         header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
 
+        // 1. Leer el cuerpo de la solicitud CRUDA (la que envía auth.js)
         $json_data = file_get_contents("php://input");
+
+        // 2. Intentar decodificar el JSON
         $data = json_decode($json_data, true);
+        $json_error = json_last_error_msg();
 
-
-        // Verificar que los datos JSON existan y sean válidos
-        if (empty($data) || !isset($data['email']) || !isset($data['password'])) {
-            http_response_code(400); // Bad Request
-            echo json_encode(["success" => false, "message" => "Datos de login incompletos o formato inválido (JSON esperado)."]);
-            return;
-        }
-
-        // Obtener datos
-        $email = $data['email'];
-        $password = $data['password'];
-        // --- FIN MODIFICACIÓN ---
-
-        // Obtener conexión a la BD
-        // El bloque try/catch de la conexión está ahora en database.php
-        $database = new Database();
-        $db = $database->getConnection();
-
-        // Verificación de conexión (Aunque ya probamos que funciona, se mantiene por seguridad)
-        if ($db === null) {
-            http_response_code(500);
-            echo json_encode(["success" => false, "message" => "Error de servicio. No se pudo obtener la conexión a la base de datos."]);
-            return;
-        }
-
-        // Instanciar objeto User
-        $user = new User($db);
-
-        // 1. Buscar al usuario por email
-        if (!$user->findByEmail($email)) {
-            // Usuario no encontrado
-            http_response_code(401); // Unauthorized
-            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
-            return;
-        }
-
-        // 2. Verificar la contraseña
-        // $user->password_hash ahora contiene el hash de la BD
-        if (password_verify($password, $user->password_hash)) {
-            // Contraseña correcta
-
-            // 3. Iniciar la sesión de PHP (Si no se hizo en index.php)
-            if (session_status() == PHP_SESSION_NONE) {
-                session_start();
-            }
-
-            // 4. Guardar datos en la sesión
-            $_SESSION['user_id'] = $user->user_id;
-            $_SESSION['email'] = $user->email;
-            $_SESSION['full_name'] = $user->full_name;
-            $_SESSION['role'] = $user->role;
-
-            // 5. Enviar respuesta JSON de éxito al frontend
-            http_response_code(200);
+        // 3. Evaluar el resultado y enviarlo al cliente
+        if ($data === null && $json_data !== "") {
+            // Falla la decodificación, pero el cuerpo no estaba vacío
+            http_response_code(400);
             echo json_encode([
-                "success" => true,
-                "role" => $user->role,
-                "message" => "Inicio de sesión exitoso."
+                "success" => false,
+                "message" => "ERROR DE JSON: El cuerpo de la solicitud no es JSON válido.",
+                "php_error" => $json_error, // Indica la razón del fallo (Ej: Syntax error)
+                "raw_input_start" => substr($json_data, 0, 50) // Muestra los primeros 50 caracteres
             ]);
-        } else {
-            // Contraseña incorrecta
-            http_response_code(401); // Unauthorized
-            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
+            return;
         }
+
+        if (empty($data)) {
+            // El cuerpo estaba vacío o $data es un array vacío
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "ERROR DE INPUT: Cuerpo de la solicitud vacío (0 bytes leídos).",
+                "raw_input_size" => strlen($json_data)
+            ]);
+            return;
+        }
+
+        // Si llega aquí, hay datos y son JSON válido. Mostrar las claves.
+        $email_key_present = isset($data['email']);
+        $password_key_present = isset($data['password']);
+
+        http_response_code(200);
+        echo json_encode([
+            "success" => true,
+            "message" => "DEBUG OK: Datos JSON recibidos.",
+            "keys_found" => array_keys($data),
+            "email_status" => $email_key_present ? "RECEIVED" : "MISSING",
+            "password_status" => $password_key_present ? "RECEIVED" : "MISSING",
+            "received_email" => $email_key_present ? $data['email'] : null
+        ]);
+        return; // Detenemos el script aquí
     }
 
     public function logout()
