@@ -16,8 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('email', email);
         formData.append('password', password);
 
-        // Llama a la API de PHP
-        fetch('./api/login', { // Llama al endpoint que crearemos
+        
+        //fetch('./api/login', { 
+        fetch('https//prideenterprise.damedomonio.xyz/api/login', { 
             method: 'POST',
             body: formData
         })
