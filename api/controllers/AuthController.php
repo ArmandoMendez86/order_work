@@ -20,14 +20,20 @@ class AuthController
             return;
         }
 
-        // Obtener conexión a la BD
-        $database = new Database();
-        $db = $database->getConnection(); // <-- Aquí $db será null si la conexión falla
+        try {
+            $database = new Database();
+            $db = $database->getConnection();
 
-        // --- VERIFICACIÓN CRÍTICA ---
-        if ($db === null) {
-            http_response_code(500); // 500 ya que es un fallo del servicio
-            echo json_encode(["success" => false, "message" => "Error de servicio. No se pudo conectar a la base de datos."]);
+            // Si la conexión falla, database.php lanza una excepción que se captura en el catch
+        } catch (Exception $e) {
+            // --- AQUÍ REVELAMOS EL ERROR FATAL ---
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "FATAL ERROR: Fallo de servicio. Por favor, revisa tus credenciales de base de datos.",
+                // Muestra el mensaje de error exacto de PDO:
+                "detail" => $e->getMessage()
+            ]);
             return;
         }
 
