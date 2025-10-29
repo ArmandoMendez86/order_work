@@ -16,8 +16,9 @@ switch ($endpoint) {
     case 'login':
         require_once __DIR__ . '/controllers/AuthController.php';
         $controller = new AuthController();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') $controller->login();
-        else {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $controller->login();
+        } else {
             http_response_code(405);
             echo json_encode(["success" => false, "message" => "Método no permitido."]);
         }
