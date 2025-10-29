@@ -2,21 +2,19 @@
 class Database
 {
     // Variables de conexión a la BD
-    //private $host = "localhost"; 
+    private $host = "localhost";
+    public $conn;
+
     //private $db_name = "order_work"; 
     //private $username = "root"; 
     //private $password = ""; 
 
-    private $host = "localhost";
     private $db_name = "u916760597_order_work";
     private $username = "u916760597_order_work";
     private $password = "Order861215";
-    public $conn;
 
-    // Método para obtener la conexión
-    // Método para obtener la conexión
-   // Método para obtener la conexión
-    public function getConnection() {
+    public function getConnection()
+    {
         $this->conn = null;
 
         try {
@@ -24,7 +22,7 @@ class Database
             $this->conn->exec("set names utf8");
             // Configura PDO para que lance excepciones en caso de error
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch(PDOException $exception) {
+        } catch (PDOException $exception) {
             // CRÍTICO: Lanzamos una nueva excepción capturable con el error de PDO
             throw new Exception("Database connection failed: " . $exception->getMessage());
         }
