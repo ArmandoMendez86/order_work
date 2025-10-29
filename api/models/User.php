@@ -71,7 +71,7 @@ class User
 
       $this->role = $row['role'];
 
-      return true;
+      return $row;
     }
 
     return false;
