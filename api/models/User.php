@@ -59,7 +59,7 @@ class User
 
       // CRÍTICO: Limpiar el hash de la BD (Solución para MariaDB vs MySQL 8)
       $this->password_hash = trim($row['password_hash']);
-      
+
       $this->role = $row['role'];
 
       return true; // Devolvemos true si se encontró y se poblaron los datos
@@ -68,4 +68,3 @@ class User
     return false;
   }
 } // <-- Solo una llave aquí
-?>

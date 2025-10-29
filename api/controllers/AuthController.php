@@ -39,30 +39,32 @@ class AuthController
         $user = new User($db);
 
         // 4. Buscar al usuario por email
-        if (!$user->findByEmail($email)) { // Devuelve true/false
+        if (!$user->findByEmail($email)) {
             http_response_code(401);
-            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
+            echo json_encode(["success" => false, "message" => "DEBUG: Email no encontrado en la BD."]);
             return;
         }
 
-        // 5. Verificar la contraseña (El objeto $user ya está poblado)
+        // --- CÓDIGO DE DEPURACIÓN SOLICITADO ---
+        // Si llegamos aquí, el email fue encontrado.
+        http_response_code(200);
+        echo json_encode([
+            "success" => true, // Usamos true para que el JS no lo muestre como error
+            "message" => "DEBUG: Usuario encontrado. Revisa el HASH.",
+            "role" => "debug", // Evita la redirección
+            "user_id_found" => $user->user_id,
+            "email_found" => $user->email,
+            "hash_from_db" => $user->password_hash,
+            "password_sent_by_user" => $password // Cuidado: no hacer esto en producción
+        ]);
+        return;
+        // --- FIN DEPURACIÓN ---
+
+        // 5. Verificar la contraseña (Esta parte está deshabilitada por el return anterior)
         if (password_verify($password, $user->password_hash)) {
-            // Contraseña correcta
-            if (session_status() == PHP_SESSION_NONE) {
-                session_start();
-            }
-
-            $_SESSION['user_id'] = $user->user_id;
-            $_SESSION['email'] = $user->email;
-            $_SESSION['full_name'] = $user->full_name;
-            $_SESSION['role'] = $user->role;
-
-            http_response_code(200);
-            echo json_encode(["success" => true, "role" => $user->role, "message" => "Inicio de sesión exitoso."]);
+            // ...
         } else {
-            // Contraseña incorrecta
-            http_response_code(401);
-            echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
+            // ...
         }
     }
 
