@@ -150,6 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const managerCanvas = document.getElementById('managerSignatureCanvas');
 
         function resizeCanvas(canvas) {
+            // --- NUEVA VERIFICACIÓN ---
+            // Si el ancho del contenedor es 0 (porque está oculto o scrolleando),
+            // no intentes redimensionar el canvas.
+            if (canvas.offsetWidth === 0) {
+                return;
+            }
+            // --- FIN VERIFICACIÓN ---
+
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
