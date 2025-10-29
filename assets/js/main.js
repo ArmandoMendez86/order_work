@@ -127,9 +127,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const pondAfter = FilePond.create(document.getElementById('photosAfter'));
 
     // Flatpickr Config
-    flatpickr("#serviceDate", { dateFormat: "Y-m-d" });
-    flatpickr("#startDate", { dateFormat: "Y-m-d H:i", enableTime: true });
-    flatpickr("#endDate", { dateFormat: "Y-m-d H:i", enableTime: true });
+    flatpickr("#serviceDate", {
+        dateFormat: "Y-m-d",
+        disableMobile: true // <-- FUERZA EL CALENDARIO DE ESCRITORIO EN MÓVIL
+    });
+    flatpickr("#startDate", {
+        dateFormat: "Y-m-d H:i",
+        enableTime: true,
+        disableMobile: true // <-- FUERZA EL CALENDARIO DE ESCRITORIO EN MÓVIL
+    });
+    flatpickr("#endDate", {
+        dateFormat: "Y-m-d H:i",
+        enableTime: true,
+        disableMobile: true // <-- FUERZA EL CALENDARIO DE ESCRITORIO EN MÓVIL
+    });
 
     // --- 2. INITIALIZATION FUNCTIONS ---
     function initSelect2() {
@@ -148,46 +159,55 @@ document.addEventListener('DOMContentLoaded', () => {
     function initSignaturePads() {
         const techCanvas = document.getElementById('techSignatureCanvas');
         const managerCanvas = document.getElementById('managerSignatureCanvas');
+        const signatureAccordion = document.getElementById('collapseSignatures'); //
 
+        // --- Función de redimensionamiento (con la guarda que ya teníamos) ---
         function resizeCanvas(canvas) {
-            // --- NUEVA VERIFICACIÓN ---
-            // Si el ancho del contenedor es 0 (porque está oculto o scrolleando),
-            // no intentes redimensionar el canvas.
+            // Si el contenedor del canvas está oculto, su ancho es 0.
+            // Ignoramos la redimensión para evitar que el canvas colapse.
             if (canvas.offsetWidth === 0) {
+                console.warn("resizeCanvas called when canvas offsetWidth is 0. Skipping.");
                 return;
             }
-            // --- FIN VERIFICACIÓN ---
-
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
         }
 
-        setTimeout(() => {
-            resizeCanvas(techCanvas);
-            resizeCanvas(managerCanvas);
+        // --- INICIALIZACIÓN DE LOS PADS ---
+        techSignaturePad = new SignaturePad(techCanvas, { penColor: "rgb(0, 0, 0)" });
+        managerSignaturePad = new SignaturePad(managerCanvas, { penColor: "rgb(0, 0, 0)" });
+        techSignaturePad.clear();
+        managerSignaturePad.clear();
 
-            techSignaturePad = new SignaturePad(techCanvas, { penColor: "rgb(0, 0, 0)" });
-            managerSignaturePad = new SignaturePad(managerCanvas, { penColor: "rgb(0, 0, 0)" });
+        // --- LÓGICA DE REDIMENSIONAMIENTO (LA PARTE CORREGIDA) ---
 
-            techSignaturePad.clear();
-            managerSignaturePad.clear();
-
-            document.getElementById('clearTechSignature').addEventListener('click', () => {
-                techSignaturePad.clear();
+        // 1. Redimensionar cuando el acordeón se ABRE
+        if (signatureAccordion) {
+            signatureAccordion.addEventListener('shown.bs.collapse', () => {
+                console.log("Signature accordion opened, resizing canvas...");
+                resizeCanvas(techCanvas);
+                resizeCanvas(managerCanvas);
             });
-            document.getElementById('clearManagerSignature').addEventListener('click', () => {
-                managerSignaturePad.clear();
-            });
+        }
 
-        }, 500);
-
+        // 2. Redimensionar si la ventana cambia de tamaño (scroll/rotación móvil)
         window.addEventListener("resize", () => {
             if (techSignaturePad) {
+                // La función 'resizeCanvas' ya tiene la protección (offsetWidth === 0)
+                // para ignorar el evento si el acordeón está cerrado.
                 resizeCanvas(techCanvas);
                 resizeCanvas(managerCanvas);
             }
+        });
+
+        // 3. Botones de limpiar
+        document.getElementById('clearTechSignature').addEventListener('click', () => {
+            techSignaturePad.clear();
+        });
+        document.getElementById('clearManagerSignature').addEventListener('click', () => {
+            managerSignaturePad.clear();
         });
     }
 
