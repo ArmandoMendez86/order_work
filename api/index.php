@@ -1,6 +1,8 @@
 <?php
 // api/index.php
 
+session_start();
+
 $request_uri = $_SERVER['REQUEST_URI'];
 $script_name = $_SERVER['SCRIPT_NAME'];
 $path_only = parse_url($request_uri, PHP_URL_PATH);
