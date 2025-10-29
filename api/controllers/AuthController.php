@@ -1,6 +1,6 @@
 <?php
-include_once __DIR__ . '../../config/database.php';
-include_once __DIR__ . '../../models/User.php';
+include_once __DIR__ . '/../config/database.php';
+include_once __DIR__ . '/../models/User.php';
 
 class AuthController
 {

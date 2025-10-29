@@ -4,7 +4,7 @@
 class WorkOrder
 {
   private $conn;
-  private $table_name = "WorkOrders";
+  private $table_name = "workorders";
 
   public function __construct($db)
   {
