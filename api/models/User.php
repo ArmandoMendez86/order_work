@@ -37,8 +37,9 @@ class User
       return false;
     }
 
-    // Limpiar datos (sanitizar)
-    $clean_email = htmlspecialchars(strip_tags($email));
+    // Limpiar datos (sanitizar) Y AÑADIR TRIM
+    $clean_email = htmlspecialchars(strip_tags(trim($email)));
+
     $stmt->bindParam(':email', $clean_email);
 
     try {
@@ -48,6 +49,7 @@ class User
       return false;
     }
 
+
     if ($stmt->rowCount() > 0) {
       // Obtener el registro
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -56,15 +58,12 @@ class User
       $this->user_id = $row['user_id'];
       $this->full_name = $row['full_name'];
       $this->email = $row['email'];
-
-      // CRÍTICO: Limpiar el hash de la BD (Solución para MariaDB vs MySQL 8)
-      $this->password_hash = trim($row['password_hash']);
-
+      $this->password_hash = trim($row['password_hash']); // Limpieza para MariaDB
       $this->role = $row['role'];
 
-      return true; // Devolvemos true si se encontró y se poblaron los datos
+      return true; // Devolvemos true (Método 1) para indicar éxito
     }
 
     return false;
   }
-} // <-- Solo una llave aquí
+} // <-- Solo una llave aquí (CORREGIDO)
