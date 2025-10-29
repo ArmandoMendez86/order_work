@@ -51,10 +51,6 @@ class AuthController
             return;
         }
 
-        echo var_dump($user);
-        return;
-
-
         // 5. Verificar la contraseña
         if (password_verify($password, $user->password_hash)) {
             // Contraseña correcta: INICIAR SESIÓN
