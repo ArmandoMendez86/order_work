@@ -23,7 +23,7 @@ class User
   public function findByEmail($email)
   {
     $query = "SELECT
-                    user_id, full_name, email, password_hash, `role`
+                    user_id, full_name, email, password_hash, role
                   FROM
                     " . $this->table_name . "
                   WHERE
