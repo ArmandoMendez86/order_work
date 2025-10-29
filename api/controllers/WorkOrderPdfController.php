@@ -1,9 +1,5 @@
 <?php
-// api/controllers/WorkOrderPdfController.php
-
-// Incluir FPDF (ajusta la ruta si es necesario)
 require_once __DIR__ . '/../../fpdf/fpdf.php';
-
 include_once __DIR__ . '/../config/database.php';
 include_once __DIR__ . '/../models/WorkOrder.php';
 include_once __DIR__ . '/../models/WorkOrderPhoto.php';
