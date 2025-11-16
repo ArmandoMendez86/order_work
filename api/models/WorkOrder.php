@@ -81,20 +81,21 @@ class WorkOrder
     return null;
   }
 
-  // Método para OBTENER todos los detalles de UNA orden (ACTUALIZADO)
   public function findById($id)
   {
-    // La consulta ahora incluye todos los campos nuevos
     $query = "SELECT wo.*, 
-                         c.category_name, 
-                         s.subcategory_name,
-                         tech.email AS assign_to_email
-                  FROM " . $this->table_name . " wo
-                  LEFT JOIN categories c ON wo.category_id = c.category_id
-                  LEFT JOIN subcategories s ON wo.subcategory_id = s.subcategory_id
-                  LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
-                  WHERE wo.work_order_id = ?
-                  LIMIT 1";
+                    c.category_name, 
+                    s.subcategory_name,
+                    tech.email AS assign_to_email,
+                    creator.full_name AS dispatcher_name,
+                    creator.email AS dispatcher_email  /* <<< CAMPO AGREGADO */
+              FROM " . $this->table_name . " wo
+              LEFT JOIN categories c ON wo.category_id = c.category_id
+              LEFT JOIN subcategories s ON wo.subcategory_id = s.subcategory_id
+              LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
+              LEFT JOIN users creator ON wo.created_by_admin_id = creator.user_id
+              WHERE wo.work_order_id = ?
+              LIMIT 1";
 
     $stmt = $this->conn->prepare($query);
     $stmt->bindParam(1, $id);

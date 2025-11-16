@@ -59,7 +59,7 @@ $(document).ready(function() {
                         "data": "work_order_id",
                         "render": function(data, type, row) {
                             // CAMBIO DE IDIOMA: Texto del botón
-                            return `<a href="./index.html?id=${data}" class="btn btn-sm btn-info">View/Edit</a>`;
+                            return `<a href="./index.html?id=${data}" class="btn btn-sm btn-outline-secondary">View/Edit</a>`;
                         },
                         "orderable": false
                     }
@@ -93,7 +93,7 @@ $(document).ready(function() {
                         "data": "work_order_id",
                         "render": function(data, type, row) {
                             // CAMBIO DE IDIOMA: Texto del botón
-                            return `<a href="./index.html?id=${data}" class="btn btn-sm btn-success">Update</a>`;
+                            return `<a href="./index.html?id=${data}" class="btn btn-sm btn-outline-secondary">Update</a>`;
                         },
                         "orderable": false
                     }

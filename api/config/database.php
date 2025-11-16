@@ -5,13 +5,13 @@ class Database
     private $host = "localhost";
     public $conn;
 
-    //private $db_name = "order_work"; 
-    //private $username = "root"; 
-    //private $password = ""; 
+    private $db_name = "order_work"; 
+    private $username = "root"; 
+    private $password = ""; 
 
-    private $db_name = "u916760597_order_work";
-    private $username = "u916760597_order_work";
-    private $password = "Order861215";
+    //private $db_name = "u916760597_order_work";
+    //private $username = "u916760597_order_work";
+    //private $password = "Order861215";
 
     public function getConnection()
     {

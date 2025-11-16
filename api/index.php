@@ -1,7 +1,20 @@
 <?php
-// api/index.php
+// --- BLOQUE CRÍTICO: Configurar y luego iniciar la sesión ---
+if (session_status() == PHP_SESSION_NONE) {
+    // 1. Configurar la cookie de sesión para la raíz antes de iniciar
+    $session_params = session_get_cookie_params();
+    session_set_cookie_params(
+        $session_params["lifetime"],
+        '/', // <<<< PATH DE LA COOKIE ESTABLECIDO A LA RAÍZ DEL DOMINIO
+        $session_params["domain"],
+        $session_params["secure"],
+        $session_params["httponly"]
+    );
 
-session_start();
+    // 2. Iniciar la sesión
+    session_start();
+}
+// --- FIN BLOQUE CRÍTICO ---
 
 $request_uri = $_SERVER['REQUEST_URI'];
 $script_name = $_SERVER['SCRIPT_NAME'];

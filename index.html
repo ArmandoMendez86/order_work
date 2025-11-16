@@ -24,16 +24,16 @@
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="bi bi-briefcase-fill me-2"></i> Pride Enterprice Inc.
+                <img src="assets/img/pride2.png" alt="" width="150">
             </a>
             <div class="d-flex align-items-center">
                 <span class="navbar-text me-3" id="loggedInUserName">
                     Loading...
                 </span>
-                <button class="btn btn-warning" id="logoutButtonForm">
+                <button class="btn btn-outline-secondary" id="logoutButtonForm">
                     <i class="bi bi-box-arrow-right"></i> Log Out
                 </button>
             </div>
@@ -44,7 +44,7 @@
             <div class="col-lg-10 col-xl-8">
                 <div class="card shadow-lg p-4">
                     <h1 class="card-title text-center mb-4">
-                        <img src="assets//img/pride.jpg" alt="" width="100"> Work Order
+                        Work Order
                     </h1>
 
                     <form id="workOrderForm" novalidate>
@@ -79,7 +79,7 @@
                                         <i class="bi bi-person-badge me-2"></i> 1. Customer & Service Details
                                     </button>
                                 </h2>
-                                <div id="collapseAdmin" class="accordion-collapse collapse show"
+                                <div id="collapseAdmin" class="accordion-collapse collapse"
                                     aria-labelledby="headingAdmin" data-bs-parent="#workOrderAccordion">
                                     <div class="accordion-body">
 
@@ -139,12 +139,11 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="totalCost" class="form-label">Total Cost ($)</label>
+                                                <label for="totalCost" class="form-label">Expenses Materials ($)</label>
                                                 <div class="input-group">
                                                     <span class="input-group-text">$</span>
                                                     <input type="number" class="form-control" id="totalCost"
-                                                        name="totalCost" placeholder="Amount" step="0.01" required
-                                                        min="0">
+                                                        name="totalCost" placeholder="Amount" step="0.01" min="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -155,14 +154,14 @@
 
                             <div class="accordion-item" id="techSection">
                                 <h2 class="accordion-header" id="headingTech">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                         data-bs-target="#collapseTech" aria-expanded="false"
                                         aria-controls="collapseTech">
                                         <i class="bi bi-tools me-2"></i> 2. Technician Report
                                     </button>
                                 </h2>
-                                <div id="collapseTech" class="accordion-collapse collapse show"
-                                    aria-labelledby="headingTech" data-bs-parent="#workOrderAccordion">
+                                <div id="collapseTech" class="accordion-collapse collapse" aria-labelledby="headingTech"
+                                    data-bs-parent="#workOrderAccordion">
                                     <div class="accordion-body">
 
                                         <h5 class="mb-3 text-primary">Work Status & Details</h5>
@@ -358,11 +357,16 @@
                             <a href="#" id="downloadPdfButton" class="btn btn-secondary btn-lg d-none" target="_blank">
                                 <i class="bi bi-file-pdf-fill"></i> Download Work Order PDF
                             </a>
-                            <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-send-fill"></i> Submit
-                                Work
-                                Order</button>
-                            <button type="button" class="btn btn-outline-secondary" id="goToDashboardButton"><i
-                                    class="bi bi-arrow-left-square"></i> Go to Dashboard</button>
+
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitButton">
+                                <span class="spinner-border spinner-border-sm d-none me-2" role="status"
+                                    aria-hidden="true" id="submitSpinner"></span>
+                                <span id="submitButtonText"><i class="bi bi-send-fill"></i> Submit Work Order</span>
+                            </button>
+
+                            <button type="button" class="btn btn-outline-secondary" id="goToDashboardButton">
+                                <i class="bi bi-arrow-left-square"></i> Go to Dashboard
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -378,6 +382,7 @@
     <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <script src="assets/js/main.js?v=1.2"></script>
 </body>

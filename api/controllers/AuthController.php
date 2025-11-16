@@ -5,9 +5,10 @@ include_once __DIR__ . '/../models/User.php';
 class AuthController
 {
 
+
     public function login()
     {
-        // Headers
+        // Headers... (Dejar esto como está)
         header("Access-Control-Allow-Origin: *");
         header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: POST");
@@ -38,24 +39,24 @@ class AuthController
         // 3. Instanciar objeto User
         $user = new User($db);
 
-        // --- 4. MODIFICADO: Usar Método 2 (Obtener el registro) ---
-        $user_data = $user->findByEmail($email); // $user_data es ahora un array (el registro) o false
+        // --- 4. Obtener el registro ---
+        $user_data = $user->findByEmail($email);
 
         if (!$user_data) {
-            // Si $user_data es false (email no encontrado)
             http_response_code(401);
             echo json_encode(["success" => false, "message" => "Email o contraseña incorrecta."]);
             return;
         }
 
-        // --- 5. MODIFICADO: Verificar usando el array $user_data ---
+        // --- 5. Verificar y Guardar Sesión ---
         if (password_verify($password, $user_data['password_hash'])) {
             // Contraseña correcta
-            if (session_status() == PHP_SESSION_NONE) {
-                session_start();
-            }
 
-            // Guardar datos del array en la sesión
+            // **********************************************
+            // * CRÍTICO: La sesión ya está iniciada por index.php. 
+            // * Simplemente guardamos las variables.
+            // **********************************************
+
             $_SESSION['user_id'] = $user_data['user_id'];
             $_SESSION['email'] = $user_data['email'];
             $_SESSION['full_name'] = $user_data['full_name'];

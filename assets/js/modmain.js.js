@@ -2,26 +2,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GLOBAL STATE ---
     let currentUserRole = '';
-    let currentUserFullName = ''; // <<< VARIABLE PARA EL NOMBRE DEL USUARIO LOGUEADO
+    let currentUserFullName = ''; // <<< NUEVA VARIABLE PARA EL NOMBRE DEL DESPACHADOR (USUARIO LOGUEADO)
     let techSignatureTempBase64 = null;
     let managerSignatureTempBase64 = null;
 
-    // --- DEFINICIÓN DE ELEMENTOS CRÍTICOS (SOLUCIÓN ERROR DE ÁMBITO) ---
+    // --- 0. LÓGICA DE AUTENTICACIÓN Y LOGOUT ---
     const logoutButtonForm = document.getElementById('logoutButtonForm');
-    const loggedInUserNameEl = document.getElementById('loggedInUserName'); // <<< DEFINICIÓN CORRECTA
-    // ----------------------------------------------------------------------
-
+    const loggedInUserNameEl = document.getElementById('loggedInUserName');
 
     // --- CREDENCIALES EMAILJS (REEMPLAZAR CON TUS VALORES REALES) ---
     const EMAILJS_SERVICE_ID = 'service_tewkhg2'; // REEMPLAZAR
-    const EMAILJS_CREATE_TEMPLATE_ID = 'template_m073kpg'; // Template para la Creación (al Técnico)
-    const EMAILJS_STATUS_TEMPLATE_ID = 'template_2j1b8vs'; // <<< NUEVO: Template para la Actualización (al Admin)
+    const EMAILJS_TEMPLATE_ID = 'template_m073kpg'; // REEMPLAZAR
+    const EMAILJS_STATUS_TEMPLATE_ID = 'template_status_update';
     const EMAILJS_PUBLIC_KEY = 'BNmYFBN0xpJf4jzrH'; // REEMPLAZAR
 
 
     // Registrar Plugins de FilePond
     if (typeof FilePondPluginImagePreview !== 'undefined') {
         FilePond.registerPlugin(FilePondPluginImagePreview);
+    }
+
+    // assets/js/main.js
+
+    // --- FUNCIÓN EMAILJS DE NOTIFICACIÓN DE ESTADO ---
+    async function sendStatusNotification(orderData, adminEmail, adminName, technicianName) {
+
+        if (!adminEmail) {
+            console.error("Error EmailJS: Email del administrador no encontrado para notificación de estado.");
+            return false;
+        }
+
+        const templateParams = {
+            // Esto asume que tienes una plantilla separada para notificaciones de estado (EJEMPLO: template_status_update)
+            title: `ACTUALIZACIÓN DE ESTADO: WO ${orderData.workOrderNumber}`,
+
+            to_name: adminName, // El destinatario es el administrador
+            to_email: adminEmail, // Correo del administrador (creador)
+
+            wo_number: orderData.workOrderNumber,
+            customer_name: orderData.customerName,
+            service_date: orderData.serviceDate,
+            technician_name: technicianName, // Nombre del técnico que reporta
+            new_status: orderData.workStage, // Nuevo estado
+            work_description: orderData.workDescription || 'No description provided.',
+        };
+
+        // --- ADVERTENCIA: DEBES CREAR Y USAR UN TEMPLATE_ID DISTINTO PARA EL STATUS ---
+        const EMAILJS_STATUS_TEMPLATE_ID = 'template_status_update'; // REEMPLAZAR CON TU ID REAL
+        // -----------------------------------------------------------------------------
+
+        try {
+            const response = await emailjs.send(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_STATUS_TEMPLATE_ID, // <<< Usamos el nuevo ID de plantilla
+                templateParams
+            );
+            console.log('EmailJS Status SUCCESS!', response.status, response.text);
+            return true;
+        } catch (error) {
+            console.error('EmailJS Status FAILED...', error);
+            return false;
+        }
     }
 
 
@@ -61,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success && result.user) {
                 currentUserRole = result.user.role;
-                currentUserFullName = result.user.full_name; // <<< CAPTURA DEL NOMBRE
+                currentUserFullName = result.user.full_name; // <<< CAPTURA DEL NOMBRE DEL DESPACHADOR
                 const roleDisplay = currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1);
                 loggedInUserNameEl.textContent = `Welcome, ${result.user.full_name} (${roleDisplay})`;
             } else {
@@ -71,22 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error checking auth status:', error.message);
             alert("Session expired or invalid. Redirecting to login.");
             window.location.href = 'login.html';
-        }
-    }
-
-    function toggleSubmissionState(isLoading) {
-        if (!submitButton || !submitSpinner || !submitButtonText) return;
-
-        submitButton.disabled = isLoading;
-
-        if (isLoading) {
-            submitSpinner.classList.remove('d-none');
-            // Mantiene el icono pero cambia el texto para dar espacio al spinner
-            submitButtonText.innerHTML = 'Processing...';
-        } else {
-            submitSpinner.classList.add('d-none');
-            // Restaura el texto original (puedes ajustarlo si prefieres otro texto)
-            submitButtonText.innerHTML = '<i class="bi bi-send-fill"></i> Submit Work Order';
         }
     }
 
@@ -117,10 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const downloadPdfButton = document.getElementById('downloadPdfButton');
     const goToDashboardButton = document.getElementById('goToDashboardButton');
-
-    const submitButton = document.getElementById('submitButton');
-    const submitSpinner = document.getElementById('submitSpinner');
-    const submitButtonText = document.getElementById('submitButtonText');
 
     const collapseAdminEl = document.getElementById('collapseAdmin');
     const collapseTechEl = document.getElementById('collapseTech');
@@ -273,8 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FUNCIÓN EMAILJS DE NOTIFICACIÓN DE CREACIÓN (Al Técnico) ---
-    async function sendCreationNotification(formData) {
+    // --- FUNCIÓN EMAILJS DE NOTIFICACIÓN ---
+    async function sendNotificationEmail(formData) {
         // 1. Buscar los detalles del técnico asignado (usando techniciansData)
         const assignedTech = techniciansData.find(tech => tech.email === formData.assignToEmail);
 
@@ -285,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const templateParams = {
             // Marcadores de la Plantilla de EmailJS
-            title: `NEW WORK ORDER ASSIGNED: ${formData.workOrderNumber}`,
+            title: `NUEVA ORDEN DE TRABAJO ASIGNADA: ${formData.workOrderNumber}`,
             to_name: assignedTech.full_name,
             to_email: assignedTech.email, // Destinatario CRÍTICO
             wo_number: formData.workOrderNumber,
@@ -298,49 +319,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await emailjs.send(
                 EMAILJS_SERVICE_ID,
-                EMAILJS_CREATE_TEMPLATE_ID,
+                EMAILJS_TEMPLATE_ID,
                 templateParams
             );
-            console.log('EmailJS SUCCESS (Creation)! Status:', response.status, response.text);
+            console.log('EmailJS SUCCESS! Status:', response.status, response.text);
             return true;
         } catch (error) {
-            console.error('EmailJS FAILED (Creation)...', error);
-            return false;
-        }
-    }
-
-    // --- FUNCIÓN EMAILJS DE NOTIFICACIÓN DE ESTADO (Al Admin Creador) ---
-    async function sendStatusNotification(orderData, adminEmail, adminName, technicianName) {
-
-        if (!adminEmail) {
-            console.error("Error EmailJS: Email del administrador no encontrado para notificación de estado.");
-            return false;
-        }
-
-        const templateParams = {
-            title: `ACTUALIZACIÓN DE ESTADO: WO ${orderData.workOrderNumber}`,
-
-            to_name: adminName, // El destinatario es el administrador
-            to_email: adminEmail, // Correo del administrador (creador)
-
-            wo_number: orderData.workOrderNumber,
-            customer_name: orderData.customerName,
-            service_date: orderData.serviceDate,
-            technician_name: technicianName, // Nombre del técnico que reporta
-            new_status: orderData.workStage, // Nuevo estado
-            work_description: orderData.workDescription || 'No description provided.',
-        };
-
-        try {
-            const response = await emailjs.send(
-                EMAILJS_SERVICE_ID,
-                EMAILJS_STATUS_TEMPLATE_ID, // <<< Usamos el ID de plantilla de estado
-                templateParams
-            );
-            console.log('EmailJS Status SUCCESS!', response.status, response.text);
-            return true;
-        } catch (error) {
-            console.error('EmailJS Status FAILED...', error);
+            console.error('EmailJS FAILED...', error);
             return false;
         }
     }
@@ -438,8 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error('Error fetching next WO number:', error); }
     }
 
-    // assets/js/main.js
-
     async function initUpdateForm(id) {
         console.log("Mode: UPDATE (Role-based permissions applied after load)", id);
         await populateSelects();
@@ -462,54 +445,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
-                const data = result.data;
+                populateFormData(result.data);
 
-                // 1. Cargar datos en el formulario (campos visibles y de solo lectura)
-                populateFormData(data);
-
-                // --- LÓGICA DE AUTOCOMPLETADO Y DATOS DE SOLO LECTURA ---
-                const techSignatureNameInput = document.getElementById('techSignatureName');
-
-                // Buscar el nombre del técnico por su email asignado (data.assign_to_email)
-                const assignedTech = techniciansData.find(tech => tech.email === data.assign_to_email);
-
-                // **PASO CRÍTICO: AUTOCOMPLETAR EL CAMPO DEL TÉCNICO ASIGNADO**
-                // Se autocompleta solo si:
-                // 1. El usuario logueado es un técnico.
-                // 2. Se encontró un técnico asignado.
-                // 3. El campo de impresión de nombre está vacío o tiene el valor inicial "N/A".
-                if (currentUserRole.toLowerCase() === 'technician' && assignedTech &&
-                    (techSignatureNameInput.value === '' || techSignatureNameInput.value === 'N/A')) {
-
-                    techSignatureNameInput.value = assignedTech.full_name;
-                }
-                // -------------------------------------------------------------
-
-                // --- ASEGURAR DATOS DE LECTURA PARA NOTIFICACIÓN Y SUBMIT ---
-                // Estos valores son necesarios para el envío del correo de notificación al administrador.
-                document.getElementById('workOrderNumber').value = data.work_order_number;
-                document.getElementById('customerName').value = data.customer_name;
-                document.getElementById('serviceDate').value = data.service_date;
-                // -----------------------------------------------------------
-
-
-                // --- CARGA DE FIRMAS SIN DELAY ---
+                // --- NUEVO CÓDIGO CRÍTICO: CARGA DE FIRMAS SIN DELAY ---
                 if (typeof techSignaturePad !== 'undefined') {
-                    // Cargar Base64 inmediatamente.
-                    if (data.tech_signature_base64) {
-                        techSignaturePad.fromDataURL(data.tech_signature_base64);
+                    // Cargar Base64 inmediatamente. Esto lo hace 'invisible' si el canvas está mal dimensionado.
+                    if (result.data.tech_signature_base64) {
+                        techSignaturePad.fromDataURL(result.data.tech_signature_base64);
+                        console.log(result.data.tech_signature_base64)
                     }
-                    if (data.manager_signature_base64) {
-                        managerSignaturePad.fromDataURL(data.manager_signature_base64);
+                    if (result.data.manager_signature_base64) {
+                        managerSignaturePad.fromDataURL(result.data.manager_signature_base64);
                     }
                 }
                 // --- FIN DE CARGA DE FIRMAS ---
 
                 // CRÍTICO: Disparar el redimensionamiento después de cargar los datos
+                // (Esto es redundante si el acordeón está cerrado, pero esencial si está abierto por defecto)
                 const techCanvas = document.getElementById('techSignatureCanvas');
                 const managerCanvas = document.getElementById('managerSignatureCanvas');
                 resizeCanvas(techCanvas, techSignaturePad, 'techSignatureTempBase64');
                 resizeCanvas(managerCanvas, managerSignaturePad, 'managerSignatureTempBase64');
+
 
 
             } else {
@@ -638,9 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // assets/js/main.js
-
-    // --- 6. FORM SUBMISSION (CON LÓGICA EMAILJS Y LOADER) ---
+    // --- 6. FORM SUBMISSION (CON LÓGICA EMAILJS) ---
     workOrderForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -668,15 +623,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // **********************************************
-        // * PASO 1: ACTIVAR EL LOADER *
-        // **********************************************
-        toggleSubmissionState(true);
-
         const formData = new FormData(workOrderForm);
         const data = Object.fromEntries(formData.entries());
-
-        // ... (Recolección de datos y firmas - SE MANTIENE IGUAL) ...
 
         data.workStage = document.querySelector('input[name="workStage"]:checked')?.value;
         data.estimatedDuration = document.querySelector('input[name="estimatedDuration"]:checked')?.value;
@@ -697,7 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
         data.manager_signature_base64 = managerSignaturePad.isEmpty() ? null : managerSignaturePad.toDataURL('image/png');
 
         if (workOrderId) {
-            // Aseguramos que los campos de Admin vayan en la actualización
             data.customerName = document.getElementById('customerName').value;
             data.city = document.getElementById('city').value;
             data.phoneNumber = document.getElementById('phoneNumber').value;
@@ -722,29 +669,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 let message = result.message;
                 let mailSent = true;
 
-                // --- LÓGICA DE ENVÍO DE CORREO ---
-                if (!workOrderId) {
+                // --- LÓGICA DE ENVÍO DE CORREO SOLO PARA CREATE (NUEVO) ---
+                if (!workOrderId) { // Si NO existe workOrderId, es una creación.
                     const techEmail = techniciansData.find(tech => tech.email === data.assignToEmail)?.email;
 
                     if (techEmail) {
-                        mailSent = await sendCreationNotification(data);
+                        mailSent = await sendNotificationEmail(data); // data tiene todos los datos necesarios
                         if (!mailSent) {
-                            message += " (ADVERTENCIA: Falló el envío de notificación por email al técnico.)";
+                            message += " (ADVERTENCIA: Falló el envío de notificación por email.)";
                         }
                     } else {
                         message += " (ADVERTENCIA: No se encontró el email del técnico para notificar.)";
-                    }
-                } else if (workOrderId && currentUserRole.toLowerCase() === 'technician') {
-
-                    const adminEmail = result.adminEmail;
-                    const adminName = result.adminName;
-                    const technicianName = currentUserFullName;
-
-                    if (adminEmail && data.workStage) {
-                        mailSent = await sendStatusNotification(data, adminEmail, adminName, technicianName);
-                        if (!mailSent) {
-                            message += " (ADVERTENCIA: Falló el envío de notificación de estado al Admin.)";
-                        }
                     }
                 }
                 // --- FIN LÓGICA DE ENVÍO DE CORREO ---
@@ -764,18 +699,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 window.location.href = redirectUrl;
 
-            } else {
-                alert(`Error: ${result.message}`);
-            }
+            } else { alert(`Error: ${result.message}`); }
 
         } catch (error) {
             console.error('Error submitting form:', error);
             alert('A network error occurred.');
-        } finally {
-            // **********************************************
-            // * PASO 2: DESACTIVAR EL LOADER SIEMPRE *
-            // **********************************************
-            toggleSubmissionState(false);
         }
     });
 

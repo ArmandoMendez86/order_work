@@ -1,4 +1,5 @@
 <?php
+// api/controllers/WorkOrderPdfController.php
 require_once __DIR__ . '/../../fpdf/fpdf.php';
 include_once __DIR__ . '/../config/database.php';
 include_once __DIR__ . '/../models/WorkOrder.php';
@@ -10,7 +11,6 @@ class PDF extends FPDF
     function Header()
     {
         // Ruta absoluta construida desde la ubicación de este archivo (WorkOrderPdfController.php)
-        // __DIR__ . '/../../' apunta a la raíz del proyecto. Luego se añade 'assets/img/pride.jpg'
         $logo_path = __DIR__ . '/../../assets/img/pride.jpg';
 
         // 1. Logo (Ajusta la ruta si es necesario. Se asume que está en assets/img/pride.jpg)
@@ -39,11 +39,8 @@ class PDF extends FPDF
     // Pie de página
     function Footer()
     {
-        // Posición a 1.5 cm del final
         $this->SetY(-15);
-        // Arial italic 8
         $this->SetFont('Arial', 'I', 8);
-        // Número de página
         $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
     }
 }
@@ -68,7 +65,6 @@ class WorkOrderPdfController
             session_start();
         }
         if (!isset($_SESSION['user_id'])) {
-            // No enviamos JSON, ya que esta respuesta es para el navegador/descarga
             http_response_code(401);
             echo "No autorizado. Inicie sesión.";
             exit();
@@ -91,12 +87,12 @@ class WorkOrderPdfController
     {
         $this->checkSession();
 
+        // findById AHORA DEVUELVE dispatcher_name y dispatcher_email
         $data = $this->workOrderModel->findById($id);
 
         if (!$data) {
             http_response_code(404);
-            echo "Work Order not found.";
-            return;
+            die("Work Order not found.");
         }
 
         // Obtener datos adicionales
@@ -112,10 +108,20 @@ class WorkOrderPdfController
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 20);
 
-        // --- Título de la Orden ---
+        // Mover posición después del header
+        $pdf->SetY(30);
+
+        // --- ENCABEZADO DE ORDEN ---
         $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 10, 'Work Order #: ' . $data['work_order_number'], 0, 1, 'L');
+        $pdf->Cell(0, 10, 'Work Order #: ' . $data['work_order_number'] . ' has been submitted with the following details.', 0, 1, 'L');
+
+        // --- Incident Number (Subtítulo solicitado) ---
         $pdf->SetFont('Arial', '', 10);
+        /* $pdf->Cell(0, 5, 'has been submitted with the following details.', 0, 1, 'L'); */
+        $pdf->Cell(0, 5, 'Incident Number:', 0, 1, 'L');
+        $pdf->Cell(0, 5, '', 0, 1);
+        // ----------------------------------------------
+
         $pdf->Cell(0, 5, 'Service Date: ' . $data['service_date'], 0, 1, 'L');
         $pdf->Cell(0, 5, 'Status: ' . $data['status'], 0, 1, 'L');
 
@@ -128,6 +134,15 @@ class WorkOrderPdfController
         $pdf->Cell(0, 7, '1. Customer & General Details (Admin)', 0, 1, 'L', true);
         $pdf->SetFont('Arial', '', 10);
 
+        // --- CAMPO: Dispatcher Name ---
+        $pdf->Cell(60, 5, 'Dispatcher Name:', 0, 0);
+        $pdf->Cell(0, 5, $data['dispatcher_name'] ?? 'N/A', 0, 1);
+
+        // --- CAMPO AGREGADO: Dispatcher Email ---
+        $pdf->Cell(60, 5, 'Dispatcher Email:', 0, 0);
+        $pdf->Cell(0, 5, $data['dispatcher_email'] ?? 'N/A', 0, 1);
+        // --------------------------------------
+
         $pdf->Cell(60, 5, 'Customer Name:', 0, 0);
         $pdf->Cell(0, 5, $data['customer_name'], 0, 1);
         $pdf->Cell(60, 5, 'City:', 0, 0);
@@ -138,6 +153,14 @@ class WorkOrderPdfController
         $pdf->Cell(0, 5, $data['customer_type'], 0, 1);
         $pdf->Cell(60, 5, 'Category/Subcategory:', 0, 0);
         $pdf->Cell(0, 5, $data['category_name'] . ($data['subcategory_name'] ? ' / ' . $data['subcategory_name'] : ''), 0, 1);
+
+        // --- CAMBIO DE ETIQUETA: Expenses Materials ---
+        $pdf->Cell(60, 5, 'Expenses Materials:', 0, 0); // Etiqueta renombrada
+        $pdf->SetFont('Arial', 'B', 10); // Resaltar el costo
+        $pdf->Cell(0, 5, '$' . number_format((float)$data['total_cost'] ?? 0, 2), 0, 1);
+        $pdf->SetFont('Arial', '', 10); // Volver al formato normal
+        // --- FIN CAMBIO DE ETIQUETA ---
+
         $pdf->Cell(60, 5, 'Responsible Technician:', 0, 0);
         $pdf->Cell(0, 5, $data['assign_to_email'], 0, 1);
 
@@ -149,7 +172,6 @@ class WorkOrderPdfController
         $pdf->SetFont('Arial', 'B', 11);
         $pdf->Cell(0, 7, '2. Activity Description (Admin)', 0, 1, 'L', true);
         $pdf->SetFont('Arial', '', 10);
-        // Borde cambiado de 1 a 0
         $pdf->MultiCell(0, 5, $data['activity_description'] ?? 'N/A', 0, 'L');
 
         // Espacio de separación
@@ -161,9 +183,13 @@ class WorkOrderPdfController
         $pdf->Cell(0, 7, '3. Technician Report', 0, 1, 'L', true);
         $pdf->SetFont('Arial', '', 10);
 
-        $pdf->Cell(60, 5, 'Start Date/Time:', 0, 0);
-        $pdf->Cell(40, 5, $data['start_datetime'] ?? 'N/A', 0, 0);
-        $pdf->Cell(60, 5, 'End Date/Time:', 0, 0);
+        $label_width = 50;
+        $value_width = 50;
+
+        // Fila 1: Start Date/Time y End Date/Time
+        $pdf->Cell($label_width, 5, 'Start Date/Time:', 0, 0); // 45mm
+        $pdf->Cell($value_width, 5, $data['start_datetime'] ?? 'N/A', 0, 0); // 50mm
+        $pdf->Cell($label_width, 5, 'End Date/Time:', 0, 0); // 45mm
         $pdf->Cell(0, 5, $data['end_datetime'] ?? 'N/A', 0, 1);
 
         $pdf->Cell(60, 5, 'Total Hours:', 0, 0);
@@ -174,13 +200,11 @@ class WorkOrderPdfController
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->Cell(0, 5, 'Materials Used:', 0, 1);
         $pdf->SetFont('Arial', '', 10);
-        // Borde cambiado de 1 a 0
         $pdf->MultiCell(0, 5, $data['materials_used'] ?? 'N/A', 0, 'L');
 
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->Cell(0, 5, 'Work Description:', 0, 1);
         $pdf->SetFont('Arial', '', 10);
-        // Borde cambiado de 1 a 0
         $pdf->MultiCell(0, 5, $data['work_description'] ?? 'N/A', 0, 'L');
 
         // Espacio de separación
@@ -204,10 +228,10 @@ class WorkOrderPdfController
 
         // FIRMA DEL TÉCNICO
         $y = $pdf->GetY();
-        $pdf->Cell(95, 5, 'Technician Signature (' . ($data['tech_signature_name_print'] ?? 'N/A') . ')', 0, 0, 'L');
+        $pdf->Cell(95, 5, 'Technician Name (Print): ' . ($data['tech_signature_name_print'] ?? 'N/A'), 0, 0, 'L');
 
         // FIRMA DEL MANAGER
-        $pdf->Cell(95, 5, 'Manager/Cashier Signature (' . ($data['manager_signature_name_print'] ?? 'N/A') . ')', 0, 1, 'L');
+        $pdf->Cell(95, 5, 'Manager/Cashier Name (Print): ' . ($data['manager_signature_name_print'] ?? 'N/A'), 0, 1, 'L');
 
         // Manejo de firmas Base64 (FPDF requiere un truco para Base64)
         $signature_width = 80;
@@ -218,6 +242,7 @@ class WorkOrderPdfController
         if (!empty($data['tech_signature_base64'])) {
             $png_data = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $data['tech_signature_base64']));
             $temp_file_tech = __DIR__ . '/../../uploads/temp/tech_sig_' . $id . '.png';
+            if (!is_dir(__DIR__ . '/../../uploads/temp/')) mkdir(__DIR__ . '/../../uploads/temp/', 0777, true);
             file_put_contents($temp_file_tech, $png_data);
             $pdf->Image($temp_file_tech, 15, $y + 5, $signature_width, $signature_height, 'PNG');
         } else {
@@ -230,6 +255,7 @@ class WorkOrderPdfController
         if (!empty($data['manager_signature_base64'])) {
             $png_data = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $data['manager_signature_base64']));
             $temp_file_manager = __DIR__ . '/../../uploads/temp/manager_sig_' . $id . '.png';
+            if (!is_dir(__DIR__ . '/../../uploads/temp/')) mkdir(__DIR__ . '/../../uploads/temp/', 0777, true);
             file_put_contents($temp_file_manager, $png_data);
             $pdf->Image($temp_file_manager, 15 + 95, $y + 5, $signature_width, $signature_height, 'PNG');
         } else {

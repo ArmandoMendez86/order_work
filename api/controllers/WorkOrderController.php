@@ -199,6 +199,8 @@ class WorkOrderController
         $this->checkSession();
         header("Content-Type: application/json; charset=UTF-8");
 
+        date_default_timezone_set('America/Mexico_City');
+
         if ($_SESSION['role'] !== 'admin') {
             http_response_code(403);
             echo json_encode(["success" => false, "message" => "Access denied."]);
@@ -266,7 +268,7 @@ class WorkOrderController
         }
     }
 
-    // [POST] /api/workorders/update/{id} - Actualiza la orden
+
     public function update($id)
     {
         $this->checkSession();
@@ -276,10 +278,10 @@ class WorkOrderController
         $data = json_decode(file_get_contents("php://input"), true);
 
         $is_success = false;
+        $work_order_id = $id; // Usamos $work_order_id para claridad en las fotos
 
+        // --- LÓGICA DE ACTUALIZACIÓN (depende del rol) ---
         if ($role === 'admin') {
-            // LÓGICA DE ACTUALIZACIÓN DEL ADMIN
-
             // 1. Obtener el ID del técnico
             $user_stmt = $this->db->prepare("SELECT user_id FROM users WHERE email = ? AND role = 'technician'");
             $user_stmt->execute([$data['assignToEmail']]);
@@ -307,8 +309,8 @@ class WorkOrderController
             ];
 
             // 3. Actualizar
-            $is_success = $this->workOrder->updateAdminFields($id, $wo_data);
-            $this->syncInvolvedTechnicians($id, $data['assignedTechnicians']);
+            $is_success = $this->workOrder->updateAdminFields($work_order_id, $wo_data);
+            $this->syncInvolvedTechnicians($work_order_id, $data['assignedTechnicians']);
         } elseif ($role === 'technician') {
             // LÓGICA DE ACTUALIZACIÓN DEL TÉCNICO
 
@@ -318,32 +320,53 @@ class WorkOrderController
             $data['isEmergency'] = $data['isEmergency'] ? 1 : 0;
 
             // 2. Actualizar
-            $is_success = $this->workOrder->updateTechFields($id, $data);
+            $is_success = $this->workOrder->updateTechFields($work_order_id, $data);
 
             // 3. Sincronizar tags
-            $this->syncInvolvedTechnicians($id, $data['assignedTechnicians']);
+            $this->syncInvolvedTechnicians($work_order_id, $data['assignedTechnicians']);
         }
 
+        // --- MANEJO DE RESPUESTA Y NOTIFICACIÓN ---
         if ($is_success) {
-            // 1. OBTENER TODAS LAS RUTAS A CONSERVAR
+            // 1. OBTENER EMAIL Y NOMBRE DEL CREADOR (ADMIN) - ¡CRÍTICO PARA LA NOTIFICACIÓN!
+            $creator_query = "SELECT u.email, u.full_name 
+                              FROM workorders wo
+                              JOIN users u ON wo.created_by_admin_id = u.user_id
+                              WHERE wo.work_order_id = ?";
+            $creator_stmt = $this->db->prepare($creator_query);
+            $creator_stmt->execute([$work_order_id]);
+            $creator_data = $creator_stmt->fetch(PDO::FETCH_ASSOC);
+
+            $creator_email = $creator_data['email'] ?? null;
+            $creator_name = $creator_data['full_name'] ?? 'Admin Dispatcher';
+            // ------------------------------------------------------------------------
+
+            // 2. Sincronización de fotos
             $paths_before = $data['photosBefore'] ?? [];
             $paths_after = $data['photosAfter'] ?? [];
             $all_paths_to_keep = array_merge($paths_before, $paths_after);
 
-            // 2. ELIMINACIÓN INTELIGENTE: Borra archivos físicos y registros de la BD que el usuario removió
-            $this->syncPhotoDeletion($id, $all_paths_to_keep);
+            $this->syncPhotoDeletion($work_order_id, $all_paths_to_keep);
+            $sync_before_success = $this->syncPhotos($work_order_id, $paths_before, 'before');
+            $sync_after_success = $this->syncPhotos($work_order_id, $paths_after, 'after');
 
-            // 3. INSERCIÓN: Solo inserta los archivos NUEVOS (temporales)
-            $sync_before_success = $this->syncPhotos($id, $paths_before, 'before');
-            $sync_after_success = $this->syncPhotos($id, $paths_after, 'after');
-
+            // 3. Devolver éxito con el email del admin
             if ($sync_before_success && $sync_after_success) {
                 http_response_code(200);
-                echo json_encode(["success" => true, "message" => "Work Order Updated."]);
+                echo json_encode([
+                    "success" => true,
+                    "message" => "Work Order Updated.",
+                    "adminEmail" => $creator_email, // <<< Correo del creador para JS
+                    "adminName" => $creator_name,   // <<< Nombre del creador para JS
+                ]);
             } else {
-                // En este punto, la orden se actualizó, pero la foto 'before' falló.
-                http_response_code(200); // Mantenemos 200 ya que la WO sí se actualizó
-                echo json_encode(["success" => true, "message" => "Work Order Updated. WARNING: Failed to save some photos. Check activity description."]);
+                http_response_code(200);
+                echo json_encode([
+                    "success" => true,
+                    "message" => "Work Order Updated. WARNING: Failed to save some photos.",
+                    "adminEmail" => $creator_email,
+                    "adminName" => $creator_name,
+                ]);
             }
         } else {
             http_response_code(503);
@@ -351,7 +374,7 @@ class WorkOrderController
         }
     }
 
-    // api/controllers/WorkOrderController.php (Dentro de la clase WorkOrderController)
+
 
     private function appendDebugLog($work_order_id, $message)
     {

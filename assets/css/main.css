@@ -152,3 +152,7 @@ body {
     background-color: var(--pride-secondary); /* Usar el color secundario de marca */
     border-radius: 6px;
 }
+
+.btn-primary{
+      background-color: var(--pride-primary) !important;
+}
