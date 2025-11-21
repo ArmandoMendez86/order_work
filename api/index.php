@@ -78,13 +78,13 @@ switch ($endpoint) {
 
         if ($method == 'GET') {
             if ($action == 'all') {
-                $controller->listAll();
+                $controller->listAll(); // < Tu función
             } elseif ($action == 'assigned') {
-                $controller->listAssigned();
+                $controller->listAssigned(); // < Tu función
             } elseif ($action == 'next-number') {
                 $controller->getNextWorkOrderNumber();
             } elseif ($action == 'details' && $id) {
-                $controller->getDetails($id);
+                $controller->getDetails($id); // < Tu función
             } elseif ($action == 'pdf' && $id) {
                 $pdfController = new WorkOrderPdfController();
                 $pdfController->generate($id);
@@ -123,6 +123,81 @@ switch ($endpoint) {
             echo json_encode(["success" => false, "message" => "Método no permitido para esta acción."]);
         }
         break;
+
+    // ==========================================================
+    // --- INICIO: NUEVAS RUTAS CRUD AÑADIDAS ---
+    // ==========================================================
+
+    case 'customers':
+        require_once __DIR__ . '/controllers/CustomerController.php';
+        $controller = new CustomerController();
+        $method = $_SERVER['REQUEST_METHOD'];
+        $action = $segments[1] ?? '';
+        $id = $segments[2] ?? null;
+
+        if ($method == 'GET' && empty($action)) {
+            $controller->readAll(); // GET /api/customers
+        } elseif ($method == 'GET' && $action == 'details' && $id) {
+            $controller->readOne($id); // GET /api/customers/details/{id}
+        } elseif ($method == 'POST' && $action == 'create') {
+            $controller->create(); // POST /api/customers/create
+        } elseif ($method == 'POST' && $action == 'update' && $id) {
+            $controller->update($id); // POST /api/customers/update/{id}
+        } elseif ($method == 'DELETE' && $action == 'delete' && $id) {
+            // Usamos DELETE ya que file-upload lo usa y tu servidor lo soporta
+            $controller->delete($id); // DELETE /api/customers/delete/{id}
+        } else {
+            http_response_code(404);
+            echo json_encode(["success" => false, "message" => "Acción 'customers' no encontrada."]);
+        }
+        break;
+
+    case 'users':
+        require_once __DIR__ . '/controllers/UserController.php';
+        $controller = new UserController();
+        $method = $_SERVER['REQUEST_METHOD'];
+        $action = $segments[1] ?? '';
+        $id = $segments[2] ?? null;
+
+        if ($method == 'GET' && empty($action)) {
+            $controller->readAll(); // GET /api/users
+        } elseif ($method == 'POST' && $action == 'create') {
+            $controller->create(); // POST /api/users/create
+        } elseif ($method == 'POST' && $action == 'update' && $id) {
+            $controller->update($id); // POST /api/users/update/{id}
+        } elseif ($method == 'DELETE' && $action == 'delete' && $id) {
+            $controller->delete($id); // DELETE /api/users/delete/{id}
+        } else {
+            http_response_code(404);
+            echo json_encode(["success" => false, "message" => "Acción 'users' no encontrada."]);
+        }
+        break;
+
+    case 'categories':
+        require_once __DIR__ . '/controllers/CategoryController.php';
+        $controller = new CategoryController();
+        $method = $_SERVER['REQUEST_METHOD'];
+        $action = $segments[1] ?? '';
+        $type = $segments[2] ?? null; // 'category' o 'subcategory'
+        $id = $segments[3] ?? null;   // ID del item
+
+        if ($method == 'GET' && empty($action)) {
+            $controller->readAll(); // GET /api/categories
+        } elseif ($method == 'POST' && $action == 'create') {
+            $controller->create(); // POST /api/categories/create
+        } elseif ($method == 'POST' && $action == 'update' && $type && $id) {
+            $controller->update($type, $id); // POST /api/categories/update/{type}/{id}
+        } elseif ($method == 'DELETE' && $action == 'delete' && $type && $id) {
+            $controller->delete($type, $id); // DELETE /api/categories/delete/{type}/{id}
+        } else {
+            http_response_code(404);
+            echo json_encode(["success" => false, "message" => "Acción 'categories' no encontrada."]);
+        }
+        break;
+
+    // ==========================================================
+    // --- FIN: NUEVAS RUTAS CRUD ---
+    // ==========================================================
 
     default:
         http_response_code(404);

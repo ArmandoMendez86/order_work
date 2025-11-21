@@ -2,21 +2,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GLOBAL STATE ---
     let currentUserRole = '';
-    let currentUserFullName = ''; // <<< VARIABLE PARA EL NOMBRE DEL USUARIO LOGUEADO
+    let currentUserFullName = '';
     let techSignatureTempBase64 = null;
     let managerSignatureTempBase64 = null;
 
-    // --- DEFINICIÓN DE ELEMENTOS CRÍTICOS (SOLUCIÓN ERROR DE ÁMBITO) ---
+    // --- DEFINICIÓN DE ELEMENTOS CRÍTICOS ---
     const logoutButtonForm = document.getElementById('logoutButtonForm');
-    const loggedInUserNameEl = document.getElementById('loggedInUserName'); // <<< DEFINICIÓN CORRECTA
+    const loggedInUserNameEl = document.getElementById('loggedInUserName');
     // ----------------------------------------------------------------------
 
 
-    // --- CREDENCIALES EMAILJS (REEMPLAZAR CON TUS VALORES REALES) ---
-    const EMAILJS_SERVICE_ID = 'service_tewkhg2'; // REEMPLAZAR
-    const EMAILJS_CREATE_TEMPLATE_ID = 'template_m073kpg'; // Template para la Creación (al Técnico)
-    const EMAILJS_STATUS_TEMPLATE_ID = 'template_2j1b8vs'; // <<< NUEVO: Template para la Actualización (al Admin)
-    const EMAILJS_PUBLIC_KEY = 'BNmYFBN0xpJf4jzrH'; // REEMPLAZAR
+    // --- CREDENCIALES EMAILJS ---
+    const EMAILJS_SERVICE_ID = 'service_tewkhg2';
+    const EMAILJS_CREATE_TEMPLATE_ID = 'template_m073kpg';
+    const EMAILJS_STATUS_TEMPLATE_ID = 'template_2j1b8vs';
+    const EMAILJS_PUBLIC_KEY = 'BNmYFBN0xpJf4jzrH';
 
 
     // Registrar Plugins de FilePond
@@ -28,21 +28,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function resizeCanvas(canvas, signaturePadInstance, tempStorageVarName) {
         if (!canvas || !signaturePadInstance) return;
 
-        // 1. Guardar firma actual
         if (!signaturePadInstance.isEmpty()) {
-            // Usa toDataURL (como en tu código original)
             window[tempStorageVarName] = signaturePadInstance.toDataURL('image/png');
         }
 
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        if (canvas.offsetWidth === 0) return; // Evita borrar cuando el panel está oculto
+        if (canvas.offsetWidth === 0) return; 
 
-        // 2. Redimensionar
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
         canvas.getContext("2d").scale(ratio, ratio);
 
-        // 3. Restaurar la firma si existe
         if (window[tempStorageVarName]) {
             signaturePadInstance.fromDataURL(window[tempStorageVarName]);
         }
@@ -61,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success && result.user) {
                 currentUserRole = result.user.role;
-                currentUserFullName = result.user.full_name; // <<< CAPTURA DEL NOMBRE
+                currentUserFullName = result.user.full_name; 
                 const roleDisplay = currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1);
                 loggedInUserNameEl.textContent = `Welcome, ${result.user.full_name} (${roleDisplay})`;
             } else {
@@ -81,11 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isLoading) {
             submitSpinner.classList.remove('d-none');
-            // Mantiene el icono pero cambia el texto para dar espacio al spinner
             submitButtonText.innerHTML = 'Processing...';
         } else {
             submitSpinner.classList.add('d-none');
-            // Restaura el texto original (puedes ajustarlo si prefieres otro texto)
             submitButtonText.innerHTML = '<i class="bi bi-send-fill"></i> Submit Work Order';
         }
     }
@@ -103,13 +97,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Inicializar EmailJS al inicio
     if (typeof emailjs !== 'undefined') {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
     // --- 1. GLOBAL VARIABLES & CONFIGS ---
     const workOrderForm = document.getElementById('workOrderForm');
+
+    // === INICIO DE MODIFICACIÓN: Definir campos de cliente ===
+    const customerSelect = document.getElementById('customerName'); // <-- Es un select
+    const cityInput = document.getElementById('city');
+    const phoneInput = document.getElementById('phoneNumber');
+    const customerTypeInput = document.getElementById('customerType');
+    // === FIN DE MODIFICACIÓN ===
+
     const categorySelect = document.getElementById('category');
     const subcategorySelect = document.getElementById('subcategory');
     const assignToEmailSelect = document.getElementById('assignToEmail');
@@ -135,31 +136,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let categoriesData = {};
     let techniciansData = [];
+    let customersData = []; // <<< AÑADIDO: Para clientes
+
     let techSignaturePad, managerSignaturePad;
 
-    // CONFIGURACIÓN DE FILEPOND CON SERVER
+    // CONFIGURACIÓN DE FILEPOND
     FilePond.setOptions({
         labelIdle: 'Drag & Drop your images or <span class="filepond--label-action">Browse</span>',
         credits: false, allowMultiple: true, maxFiles: 5, acceptedFileTypes: ['image/*'],
-
         server: {
             process: {
                 url: 'api/file-upload/process',
-                fieldName: 'file', // CRÍTICO: Nombre del campo esperado por PHP
-
-                // NUEVO: INTERCEPTAR LA PETICIÓN ANTES DE ENVIAR
+                fieldName: 'file', 
                 ondata: (formData) => {
-                    console.groupCollapsed('--- FILEPOND UPLOAD PAYLOAD ---');
-
-                    // console.log para ver todas las claves y sus tipos
-                    for (var pair of formData.entries()) {
-                        if (pair[1] instanceof File) {
-                            console.log(`Key: ${pair[0]}, Value: [File Object: ${pair[1].name}, ${pair[1].size} bytes]`);
-                        } else {
-                            console.log(`Key: ${pair[0]}, Value: ${pair[1]}`);
-                        }
-                    }
-                    console.groupEnd();
                     return formData;
                 }
             },
@@ -167,10 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 url: 'api/file-upload/revert',
                 method: 'DELETE',
             },
-            // Load handler
             load: (source, load, error, progress, abort, headers) => {
                 const projectRoot = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                // Concatena el origen (http://localhost), la raíz del proyecto, y la ruta de la BD (source)
                 const fullUrl = window.location.origin + projectRoot + '/' + source;
 
                 const request = new Request(fullUrl);
@@ -185,30 +172,26 @@ document.addEventListener('DOMContentLoaded', () => {
         },
     });
 
-    // Inicializar FilePond (añadimos name para recolección)
     const pondBefore = FilePond.create(document.getElementById('photosBefore'));
     const pondAfter = FilePond.create(document.getElementById('photosAfter'));
 
-    // Flatpickr Config (con retraso para móviles)
+    // Flatpickr Config
     setTimeout(() => {
-        flatpickr("#serviceDate", {
-            dateFormat: "Y-m-d",
-            disableMobile: true
-        });
-        flatpickr("#startDate", {
-            dateFormat: "Y-m-d H:i",
-            enableTime: true,
-            disableMobile: true
-        });
-        flatpickr("#endDate", {
-            dateFormat: "Y-m-d H:i",
-            enableTime: true,
-            disableMobile: true
-        });
-    }, 100); // 100ms de retraso
+        flatpickr("#serviceDate", { dateFormat: "Y-m-d", disableMobile: true });
+        flatpickr("#startDate", { dateFormat: "Y-m-d H:i", enableTime: true, disableMobile: true });
+        flatpickr("#endDate", { dateFormat: "Y-m-d H:i", enableTime: true, disableMobile: true });
+    }, 100);
 
     // --- 2. INITIALIZATION FUNCTIONS ---
     function initSelect2() {
+        // === INICIO DE MODIFICACIÓN: Inicializar Select2 para Clientes ===
+        $('#customerName').select2({
+            theme: "bootstrap-5",
+            placeholder: "Select or type customer name...",
+            tags: true // Permite añadir nuevos clientes
+        });
+        // === FIN DE MODIFICACIÓN ===
+
         $('#category').select2({ theme: "bootstrap-5", placeholder: "Select a Category" });
         $('#subcategory').select2({ theme: "bootstrap-5", placeholder: "Select a Subcategory" });
         $('#assignToEmail').select2({
@@ -226,45 +209,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const managerCanvas = document.getElementById('managerSignatureCanvas');
         const signatureAccordion = document.getElementById('collapseSignatures');
 
-        // Solo inicializar si los elementos Canvas existen
         if (!techCanvas || !managerCanvas) return;
 
-        // --- INICIALIZACIÓN DE LOS PADS ---
         techSignaturePad = new SignaturePad(techCanvas, { penColor: "rgb(0, 0, 0)" });
         managerSignaturePad = new SignaturePad(managerCanvas, { penColor: "rgb(0, 0, 0)" });
         techSignaturePad.clear();
         managerSignaturePad.clear();
 
-
-        // --- LÓGICA DE EVENTOS DE REDIMENSIONAMIENTO ---
-
-        // 1. Redimensionar cuando el acordeón se ABRE (CRÍTICO: con setTimeout)
         if (signatureAccordion) {
             signatureAccordion.addEventListener('shown.bs.collapse', () => {
-                console.log("Acordeón de firmas abierto. Intentando restaurar dibujo.");
-
-                // Usamos setTimeout para asegurar que el DOM ha terminado su animación 
-                // y el navegador ha calculado el ancho real (evita offsetWidth=0).
                 setTimeout(() => {
-                    // LLAMAMOS A LA FUNCIÓN GLOBAL CON LAS INSTANCIAS
                     resizeCanvas(techCanvas, techSignaturePad, 'techSignatureTempBase64');
                     resizeCanvas(managerCanvas, managerSignaturePad, 'managerSignatureTempBase64');
-
                 }, 50);
             });
         }
 
-        // 2. Redimensionar si la ventana cambia de tamaño (rotación móvil)
         window.addEventListener("resize", () => {
             if (techSignaturePad) {
-                // LLAMAMOS A LA FUNCIÓN GLOBAL CON LAS INSTANCIAS
                 resizeCanvas(techCanvas, techSignaturePad, 'techSignatureTempBase64');
                 resizeCanvas(managerCanvas, managerSignaturePad, 'managerSignatureTempBase64');
-
             }
         });
 
-        // 3. Botones de limpiar (se mantienen igual)
         document.getElementById('clearTechSignature').addEventListener('click', () => {
             techSignaturePad.clear();
         });
@@ -275,24 +242,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNCIÓN EMAILJS DE NOTIFICACIÓN DE CREACIÓN (Al Técnico) ---
     async function sendCreationNotification(formData) {
-        // 1. Buscar los detalles del técnico asignado (usando techniciansData)
         const assignedTech = techniciansData.find(tech => tech.email === formData.assignToEmail);
-
         if (!assignedTech) {
             console.error("Error EmailJS: Detalles del técnico asignado no encontrados.");
             return false;
         }
 
+        // === INICIO DE MODIFICACIÓN: Obtener texto del cliente ===
+        const customerNameText = $('#customerName option:selected').text();
+        // === FIN DE MODIFICACIÓN ===
+
         const templateParams = {
-            // Marcadores de la Plantilla de EmailJS
             title: `NEW WORK ORDER ASSIGNED: ${formData.workOrderNumber}`,
             to_name: assignedTech.full_name,
-            to_email: assignedTech.email, // Destinatario CRÍTICO
+            to_email: assignedTech.email,
             wo_number: formData.workOrderNumber,
-            customer_name: formData.customerName,
+            customer_name: customerNameText, // <-- MODIFICADO
             service_date: formData.serviceDate,
-            activity_description: formData.activityDescription || 'Sin descripción de actividad.',
-            dispatcher_name: currentUserFullName || 'Administrador Despachador', // Nombre del usuario logueado
+            activity_description: formData.activityDescription || 'N/A',
+            dispatcher_name: currentUserFullName || 'Admin',
         };
 
         try {
@@ -301,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 EMAILJS_CREATE_TEMPLATE_ID,
                 templateParams
             );
-            console.log('EmailJS SUCCESS (Creation)! Status:', response.status, response.text);
+            console.log('EmailJS SUCCESS (Creation)!', response.status, response.text);
             return true;
         } catch (error) {
             console.error('EmailJS FAILED (Creation)...', error);
@@ -313,28 +281,30 @@ document.addEventListener('DOMContentLoaded', () => {
     async function sendStatusNotification(orderData, adminEmail, adminName, technicianName) {
 
         if (!adminEmail) {
-            console.error("Error EmailJS: Email del administrador no encontrado para notificación de estado.");
+            console.error("Error EmailJS: Email del administrador no encontrado.");
             return false;
         }
+        
+        // === INICIO DE MODIFICACIÓN: Obtener texto del cliente ===
+        const customerNameText = $('#customerName option:selected').text();
+        // === FIN DE MODIFICACIÓN ===
 
         const templateParams = {
-            title: `ACTUALIZACIÓN DE ESTADO: WO ${orderData.workOrderNumber}`,
-
-            to_name: adminName, // El destinatario es el administrador
-            to_email: adminEmail, // Correo del administrador (creador)
-
+            title: `STATUS UPDATE: WO ${orderData.workOrderNumber}`,
+            to_name: adminName,
+            to_email: adminEmail,
             wo_number: orderData.workOrderNumber,
-            customer_name: orderData.customerName,
+            customer_name: customerNameText, // <-- MODIFICADO
             service_date: orderData.serviceDate,
-            technician_name: technicianName, // Nombre del técnico que reporta
-            new_status: orderData.workStage, // Nuevo estado
-            work_description: orderData.workDescription || 'No description provided.',
+            technician_name: technicianName,
+            new_status: orderData.workStage,
+            work_description: orderData.workDescription || 'N/A',
         };
 
         try {
             const response = await emailjs.send(
                 EMAILJS_SERVICE_ID,
-                EMAILJS_STATUS_TEMPLATE_ID, // <<< Usamos el ID de plantilla de estado
+                EMAILJS_STATUS_TEMPLATE_ID,
                 templateParams
             );
             console.log('EmailJS Status SUCCESS!', response.status, response.text);
@@ -356,16 +326,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 categoriesData = data.categories;
                 techniciansData = data.technicians;
+                customersData = data.customers; // <<< AÑADIDO
 
+                // Poblar Categorías
                 categorySelect.innerHTML = '<option value=""></option>';
                 for (const category in categoriesData) {
                     const option = new Option(category, category);
                     categorySelect.appendChild(option);
                 }
 
+                // === INICIO DE MODIFICACIÓN: Poblar Clientes ===
+                customerSelect.innerHTML = '<option value=""></option>';
+                if (customersData && customersData.length > 0) {
+                    customersData.forEach(cust => {
+                        const option = new Option(
+                            cust.customer_name,  // Texto
+                            cust.customer_id     // Valor (ID)
+                        );
+                        // Guardamos datos para autocompletar
+                        option.setAttribute('data-city', cust.customer_city || '');
+                        option.setAttribute('data-phone', cust.customer_phone || '');
+                        option.setAttribute('data-type', cust.customer_type || '');
+                        customerSelect.appendChild(option);
+                    });
+                }
+                // === FIN DE MODIFICACIÓN ===
+
+                // Poblar Técnicos
                 assignToEmailSelect.innerHTML = '<option value=""></option>';
                 assignedTechniciansSelect.innerHTML = '';
-
                 techniciansData.forEach(tech => {
                     const responsibleOption = new Option(tech.full_name, tech.email);
                     assignToEmailSelect.appendChild(responsibleOption);
@@ -373,14 +362,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     assignedTechniciansSelect.appendChild(involvedOption);
                 });
 
+                // Disparar 'change' en todos los Select2
                 $(assignToEmailSelect).trigger('change');
                 $(assignedTechniciansSelect).trigger('change');
                 $(categorySelect).trigger('change');
+                $(customerSelect).trigger('change'); // <<< AÑADIDO
 
             } else { alert('Error loading form data.'); }
         } catch (error) { console.error('Error fetching init data:', error); }
     }
 
+    // Listener de Categoría
     $('#category').on('change', function () {
         const selectedCategory = $(this).val();
         subcategorySelect.innerHTML = '<option value=""></option>';
@@ -399,6 +391,29 @@ document.addEventListener('DOMContentLoaded', () => {
         $(subcategorySelect).trigger('change');
     });
 
+    // === INICIO DE MODIFICACIÓN: Listener de Cliente para Autocompletar ===
+    $('#customerName').on('change', function (e) {
+        // Si se está creando una 'tag' (cliente nuevo), limpiar campos
+        if (e.params && e.params.data && e.params.data.created) {
+            cityInput.value = '';
+            phoneInput.value = '';
+            customerTypeInput.value = '';
+            return;
+        }
+
+        const selectedOption = $(this).find('option:selected');
+        const city = selectedOption.data('city') || '';
+        const phone = selectedOption.data('phone') || '';
+        const type = selectedOption.data('type') || '';
+
+        // Autocompletar campos
+        cityInput.value = city;
+        phoneInput.value = phone;
+        customerTypeInput.value = type;
+    });
+    // === FIN DE MODIFICACIÓN ===
+
+
     // --- 4. FORM MODES (CREATE vs UPDATE) ---
     function getWorkOrderIdFromUrl() {
         const params = new URLSearchParams(window.location.search);
@@ -410,26 +425,21 @@ document.addEventListener('DOMContentLoaded', () => {
         await populateSelects();
         initSelect2();
         initSignaturePads();
-        disableTechFields();
+        //disableTechFields(); 
 
         const today = new Date();
         const yyyy = today.getFullYear();
-        // getMonth() es base 0, por eso sumamos 1
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
-
-        // Formato YYYY-MM-DD
         document.getElementById('serviceDate').value = `${yyyy}-${mm}-${dd}`;
 
         collapseAdmin.show();
         collapseTech.hide();
         collapseSignatures.hide();
 
-        // --- OCULTAR PDF EN MODO CREATE ---
         if (downloadPdfButton) {
             downloadPdfButton.classList.add('d-none');
         }
-        // --- FIN OCULTAR PDF ---
 
         try {
             const response = await fetch('api/workorders/next-number');
@@ -438,24 +448,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error('Error fetching next WO number:', error); }
     }
 
-    // assets/js/main.js
-
     async function initUpdateForm(id) {
-        console.log("Mode: UPDATE (Role-based permissions applied after load)", id);
-        await populateSelects();
+        console.log("Mode: UPDATE", id);
+        await populateSelects(); // Poblar selects PRIMERO
         initSelect2();
         initSignaturePads();
 
-        /* collapseAdmin.show();
-         collapseTech.show();
-         collapseSignatures.show(); */
-
-        // --- MOSTRAR Y CONFIGURAR PDF EN MODO UPDATE ---
         if (downloadPdfButton) {
             downloadPdfButton.classList.remove('d-none');
             downloadPdfButton.href = `api/workorders/pdf/${id}`;
         }
-        // --- FIN MOSTRAR Y CONFIGURAR PDF ---
 
         try {
             const response = await fetch(`api/workorders/details/${id}`);
@@ -463,39 +465,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success) {
                 const data = result.data;
-
-                // 1. Cargar datos en el formulario (campos visibles y de solo lectura)
+                
+                // Cargar datos (esta función AHORA maneja el select de cliente)
                 populateFormData(data);
 
-                // --- LÓGICA DE AUTOCOMPLETADO Y DATOS DE SOLO LECTURA ---
                 const techSignatureNameInput = document.getElementById('techSignatureName');
-
-                // Buscar el nombre del técnico por su email asignado (data.assign_to_email)
                 const assignedTech = techniciansData.find(tech => tech.email === data.assign_to_email);
 
-                // **PASO CRÍTICO: AUTOCOMPLETAR EL CAMPO DEL TÉCNICO ASIGNADO**
-                // Se autocompleta solo si:
-                // 1. El usuario logueado es un técnico.
-                // 2. Se encontró un técnico asignado.
-                // 3. El campo de impresión de nombre está vacío o tiene el valor inicial "N/A".
                 if (currentUserRole.toLowerCase() === 'technician' && assignedTech &&
                     (techSignatureNameInput.value === '' || techSignatureNameInput.value === 'N/A')) {
-
                     techSignatureNameInput.value = assignedTech.full_name;
                 }
-                // -------------------------------------------------------------
 
-                // --- ASEGURAR DATOS DE LECTURA PARA NOTIFICACIÓN Y SUBMIT ---
-                // Estos valores son necesarios para el envío del correo de notificación al administrador.
+                // Asegurar datos de solo lectura para notificación
                 document.getElementById('workOrderNumber').value = data.work_order_number;
-                document.getElementById('customerName').value = data.customer_name;
                 document.getElementById('serviceDate').value = data.service_date;
-                // -----------------------------------------------------------
 
-
-                // --- CARGA DE FIRMAS SIN DELAY ---
+                // Carga de firmas
                 if (typeof techSignaturePad !== 'undefined') {
-                    // Cargar Base64 inmediatamente.
                     if (data.tech_signature_base64) {
                         techSignaturePad.fromDataURL(data.tech_signature_base64);
                     }
@@ -503,14 +490,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         managerSignaturePad.fromDataURL(data.manager_signature_base64);
                     }
                 }
-                // --- FIN DE CARGA DE FIRMAS ---
-
-                // CRÍTICO: Disparar el redimensionamiento después de cargar los datos
+                
                 const techCanvas = document.getElementById('techSignatureCanvas');
                 const managerCanvas = document.getElementById('managerSignatureCanvas');
                 resizeCanvas(techCanvas, techSignaturePad, 'techSignatureTempBase64');
                 resizeCanvas(managerCanvas, managerSignaturePad, 'managerSignatureTempBase64');
-
 
             } else {
                 alert(result.message);
@@ -523,21 +507,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DESHABILITA CAMPOS DEL ADMINISTRADOR (Sección 1)
     function disableAdminFields() {
-        // [CRÍTICO] MANTENER EL BOTÓN DEL ACORDEÓN HABILITADO
         adminButton.disabled = false;
         adminButton.classList.remove('disabled');
 
-        // DESHABILITAR TODOS LOS INPUTS DENTRO DE LA SECCIÓN
-        document.getElementById('customerName').disabled = true;
-        document.getElementById('city').disabled = true;
-        document.getElementById('phoneNumber').disabled = true;
-        document.getElementById('customerType').disabled = true;
+        // === INICIO DE MODIFICACIÓN: Deshabilitar campos de cliente ===
+        $('#customerName').prop('disabled', true).trigger('change');
+        cityInput.disabled = true;
+        phoneInput.disabled = true;
+        customerTypeInput.disabled = true;
+        // === FIN DE MODIFICACIÓN ===
+
         document.getElementById('activityDescription').disabled = true;
-        document.getElementById('category').disabled = true;
-        document.getElementById('subcategory').disabled = true;
         document.getElementById('totalCost').disabled = true;
-        document.getElementById('assignToEmail').disabled = true;
         document.getElementById('serviceDate').disabled = true;
+
         $(categorySelect).prop('disabled', true).trigger('change');
         $(subcategorySelect).prop('disabled', true).trigger('change');
         $(assignToEmailSelect).prop('disabled', true).trigger('change');
@@ -545,18 +528,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DESHABILITA CAMPOS DEL TÉCNICO (Sección 2 y 3)
     function disableTechFields() {
-        document.querySelectorAll('input[name="workStage"]').forEach(el => el.disabled = false);
-        document.getElementById('materials').disabled = false;
-        document.getElementById('workDescription').disabled = false;
-        pondBefore.disabled = false;
-        pondAfter.disabled = false;
-        document.getElementById('startDate').disabled = false;
-        document.getElementById('endDate').disabled = false;
-        document.getElementById('totalHours').disabled = false;
-        document.querySelectorAll('input[name="estimatedDuration"]').forEach(el => el.disabled = false);
-        document.getElementById('workAfter5PM').disabled = false;
-        document.getElementById('workWeekend').disabled = false;
-        document.getElementById('isEmergency').disabled = false;
+        // === INICIO DE MODIFICACIÓN: Habilitar campos de Admin ===
+        $('#customerName').prop('disabled', false).trigger('change');
+        cityInput.disabled = false;
+        phoneInput.disabled = false;
+        customerTypeInput.disabled = false;
+        document.getElementById('activityDescription').disabled = false;
+        document.getElementById('totalCost').disabled = false;
+        document.getElementById('serviceDate').disabled = false;
+        $(categorySelect).prop('disabled', false).trigger('change');
+        $(assignToEmailSelect).prop('disabled', false).trigger('change');
+        // (Subcategoría se maneja por su listener)
+        // === FIN DE MODIFICACIÓN ===
+        
+        // Deshabilitar campos de Técnico
+        document.querySelectorAll('input[name="workStage"]').forEach(el => el.disabled = true);
+        document.getElementById('materials').disabled = true;
+        document.getElementById('workDescription').disabled = true;
+        pondBefore.disabled = true;
+        pondAfter.disabled = true;
+        document.getElementById('startDate').disabled = true;
+        document.getElementById('endDate').disabled = true;
+        document.getElementById('totalHours').disabled = true;
+        document.querySelectorAll('input[name="estimatedDuration"]').forEach(el => el.disabled = true);
+        document.getElementById('workAfter5PM').disabled = true;
+        document.getElementById('workWeekend').disabled = true;
+        document.getElementById('isEmergency').disabled = true;
         document.getElementById('assignedTechnicians').disabled = true;
         document.getElementById('techSignatureName').disabled = true;
         document.getElementById('managerSignatureName').disabled = true;
@@ -570,10 +567,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateFormData(data) {
         document.getElementById('workOrderNumber').value = data.work_order_number;
         document.getElementById('serviceDate').value = data.service_date;
-        document.getElementById('customerName').value = data.customer_name;
-        document.getElementById('city').value = data.customer_city;
-        document.getElementById('phoneNumber').value = data.customer_phone;
-        document.getElementById('customerType').value = data.customer_type;
+
+        // === INICIO DE MODIFICACIÓN: Poblar Select2 de Cliente ===
+        const customerNameSelect = $('#customerName');
+        const customerId = data.customer_id;
+        const customerName = data.customer_name;
+        
+        if (customerId && customerName) {
+            // Comprobamos si el cliente (por ID) ya existe en la lista
+            if (customerNameSelect.find(`option[value="${customerId}"]`).length) {
+                // Si existe, lo seleccionamos
+                customerNameSelect.val(customerId).trigger('change');
+            } else {
+                // Si no existe, lo creamos y seleccionamos
+                const newOption = new Option(customerName, customerId, true, true);
+                newOption.setAttribute('data-city', data.customer_city || '');
+                newOption.setAttribute('data-phone', data.customer_phone || '');
+                newOption.setAttribute('data-type', data.customer_type || '');
+                customerNameSelect.append(newOption).trigger('change');
+            }
+        }
+        
+        // Poblamos los campos de autocompletado
+        cityInput.value = data.customer_city;
+        phoneInput.value = data.customer_phone;
+        customerTypeInput.value = data.customer_type;
+        // === FIN DE MODIFICACIÓN ===
+
         document.getElementById('activityDescription').value = data.activity_description || '';
         document.getElementById('totalCost').value = data.total_cost;
         $('#category').val(data.category_name).trigger('change');
@@ -608,26 +628,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.photos && data.photos.length > 0) {
             const filesBefore = data.photos
                 .filter(p => p.photo_type === 'before')
-                .map(p => ({
-                    source: p.file_path,
-                    options: { type: 'local' },
-                }));
+                .map(p => ({ source: p.file_path, options: { type: 'local' } }));
 
             const filesAfter = data.photos
                 .filter(p => p.photo_type === 'after')
-                .map(p => ({
-                    source: p.file_path,
-                    options: { type: 'local' },
-                }));
+                .map(p => ({ source: p.file_path, options: { type: 'local' } }));
 
             pondBefore.setOptions({ files: filesBefore });
             pondAfter.setOptions({ files: filesAfter });
         }
 
-
+        // Carga de firmas
         if (data.tech_signature_base64 && techSignaturePad) {
             try {
-                // La firma se carga, aunque esté invisible/mal dimensionada al inicio.
                 techSignaturePad.fromDataURL(data.tech_signature_base64);
             } catch (e) { console.error("Error loading tech signature:", e); }
         }
@@ -638,16 +651,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // assets/js/main.js
 
-    // --- 6. FORM SUBMISSION (CON LÓGICA EMAILJS Y LOADER) ---
+    // --- 6. FORM SUBMISSION ---
     workOrderForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         let isFormValid = true;
         const categoryVal = $('#category').val();
-        const assignToEmailVal = $('#assignToEmail').val();
+        const assignToEmailVal = $('#assignToEmail');
+        
+        // === INICIO DE MODIFICACIÓN: Validar Select2 de Cliente ===
+        const customerVal = $('#customerName').val();
         $('.select2-container').removeClass('is-invalid');
+        // === FIN DE MODIFICACIÓN ===
 
         if (!workOrderForm.checkValidity()) {
             isFormValid = false;
@@ -657,10 +673,18 @@ document.addEventListener('DOMContentLoaded', () => {
             isFormValid = false;
             $('#category').next('.select2-container').addClass('is-invalid');
         }
-        const workOrderId = getWorkOrderIdFromUrl();
-        if (!workOrderId && !assignToEmailVal) {
+        
+        // === INICIO DE MODIFICACIÓN: Validar Select2 de Cliente ===
+        if (!customerVal) {
             isFormValid = false;
-            $('#assignToEmail').next('.select2-container').addClass('is-invalid');
+            $('#customerName').next('.select2-container').addClass('is-invalid');
+        }
+        // === FIN DE MODIFICACIÓN ===
+        
+        const workOrderId = getWorkOrderIdFromUrl();
+        if (!workOrderId && !assignToEmailVal.val()) {
+            isFormValid = false;
+            assignToEmailVal.next('.select2-container').addClass('is-invalid');
         }
 
         if (!isFormValid) {
@@ -668,15 +692,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // **********************************************
-        // * PASO 1: ACTIVAR EL LOADER *
-        // **********************************************
         toggleSubmissionState(true);
 
         const formData = new FormData(workOrderForm);
         const data = Object.fromEntries(formData.entries());
 
-        // ... (Recolección de datos y firmas - SE MANTIENE IGUAL) ...
+        // === INICIO DE MODIFICACIÓN: Recolección de Datos de Cliente ===
+        const customerSelectValue = $('#customerName').val();
+        
+        if (isNaN(customerSelectValue)) {
+            // Es una 'tag' nueva (texto)
+            data.customer_id = null; 
+            data.customer_name_new = customerSelectValue; // El valor es el nombre
+        } else {
+            // Es un cliente existente (ID)
+            data.customer_id = customerSelectValue;
+            data.customer_name_new = null;
+        }
+        
+        // Enviamos los campos de autocompletado también
+        data.customer_city = cityInput.value;
+        data.customer_phone = phoneInput.value;
+        data.customer_type = customerTypeInput.value;
+        // (El campo 'customerName' del <select> se sobreescribe, por eso usamos customer_id y customer_name_new)
+        // === FIN DE MODIFICACIÓN ===
 
         data.workStage = document.querySelector('input[name="workStage"]:checked')?.value;
         data.estimatedDuration = document.querySelector('input[name="estimatedDuration"]:checked')?.value;
@@ -684,29 +723,25 @@ document.addEventListener('DOMContentLoaded', () => {
         data.workWeekend = document.getElementById('workWeekend').checked;
         data.isEmergency = document.getElementById('isEmergency').checked;
         data.category = categoryVal;
-        data.assignToEmail = assignToEmailVal;
+        data.assignToEmail = assignToEmailVal.val();
         data.subcategory = $('#subcategory').val();
         data.assignedTechnicians = $('#assignedTechnicians').val();
 
-        // Recolección de identificadores de FilePond
         data.photosBefore = pondBefore.getFiles().map(file => file.serverId || file.source);
         data.photosAfter = pondAfter.getFiles().map(file => file.serverId || file.source);
 
-        // Firmas
         data.tech_signature_base64 = techSignaturePad.isEmpty() ? null : techSignaturePad.toDataURL('image/png');
         data.manager_signature_base64 = managerSignaturePad.isEmpty() ? null : managerSignaturePad.toDataURL('image/png');
 
+        // === INICIO DE MODIFICACIÓN: Recolectar solo campos de admin NO-cliente en modo update ===
         if (workOrderId) {
-            // Aseguramos que los campos de Admin vayan en la actualización
-            data.customerName = document.getElementById('customerName').value;
-            data.city = document.getElementById('city').value;
-            data.phoneNumber = document.getElementById('phoneNumber').value;
-            data.customerType = document.getElementById('customerType').value;
+            // (Los campos de cliente ya se recolectaron arriba)
             data.activityDescription = document.getElementById('activityDescription').value;
             data.totalCost = document.getElementById('totalCost').value;
             data.serviceDate = document.getElementById('serviceDate').value;
             data.workOrderNumber = document.getElementById('workOrderNumber').value;
         }
+        // === FIN DE MODIFICACIÓN ===
 
         let url = workOrderId ? `api/workorders/update/${workOrderId}` : 'api/workorders/create';
 
@@ -722,38 +757,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 let message = result.message;
                 let mailSent = true;
 
-                // --- LÓGICA DE ENVÍO DE CORREO ---
+                // Lógica de Email (sin cambios, ya se corrigió arriba)
                 if (!workOrderId) {
                     const techEmail = techniciansData.find(tech => tech.email === data.assignToEmail)?.email;
-
                     if (techEmail) {
                         mailSent = await sendCreationNotification(data);
-                        if (!mailSent) {
-                            message += " (ADVERTENCIA: Falló el envío de notificación por email al técnico.)";
-                        }
+                        if (!mailSent) message += " (WARNING: Failed to send email notification to technician.)";
                     } else {
-                        message += " (ADVERTENCIA: No se encontró el email del técnico para notificar.)";
+                        message += " (WARNING: Technician email not found for notification.)";
                     }
                 } else if (workOrderId && currentUserRole.toLowerCase() === 'technician') {
-
                     const adminEmail = result.adminEmail;
                     const adminName = result.adminName;
                     const technicianName = currentUserFullName;
-
                     if (adminEmail && data.workStage) {
                         mailSent = await sendStatusNotification(data, adminEmail, adminName, technicianName);
-                        if (!mailSent) {
-                            message += " (ADVERTENCIA: Falló el envío de notificación de estado al Admin.)";
-                        }
+                        if (!mailSent) message += " (WARNING: Failed to send status notification to Admin.)";
                     }
                 }
-                // --- FIN LÓGICA DE ENVÍO DE CORREO ---
-
-
+                
                 alert(message);
 
                 let redirectUrl = 'admin-dashboard.html';
-
                 if (workOrderId) {
                     if (currentUserRole.toLowerCase() === 'admin') {
                         redirectUrl = 'admin-dashboard.html';
@@ -761,7 +786,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         redirectUrl = 'tech-dashboard.html';
                     }
                 }
-
                 window.location.href = redirectUrl;
 
             } else {
@@ -772,9 +796,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error submitting form:', error);
             alert('A network error occurred.');
         } finally {
-            // **********************************************
-            // * PASO 2: DESACTIVAR EL LOADER SIEMPRE *
-            // **********************************************
             toggleSubmissionState(false);
         }
     });
@@ -794,11 +815,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (role === 'admin') {
                 console.log("Applying permissions: Admin Mode (Update). Disabling Tech fields.");
-                disableTechFields();
+                // === INICIO DE MODIFICACIÓN: Esta función ahora está correcta ===
+                disableTechFields(); 
+                // === FIN DE MODIFICACIÓN ===
             } else if (role === 'technician') {
                 console.log("Applying permissions: Technician Mode (Update). Disabling Admin fields.");
                 disableAdminFields();
-
             } else {
                 console.log("Applying permissions: Unknown Role. Disabling ALL fields.");
                 disableAdminFields();
@@ -808,14 +830,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (goToDashboardButton) {
             goToDashboardButton.addEventListener('click', () => {
-                let redirectUrl = 'login.html'; // Default seguro
-
+                let redirectUrl = 'login.html';
                 if (currentUserRole.toLowerCase() === 'admin') {
                     redirectUrl = 'admin-dashboard.html';
                 } else if (currentUserRole.toLowerCase() === 'technician') {
                     redirectUrl = 'tech-dashboard.html';
                 }
-
                 window.location.href = redirectUrl;
             });
         }

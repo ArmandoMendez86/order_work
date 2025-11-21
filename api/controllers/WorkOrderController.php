@@ -4,6 +4,7 @@
 include_once __DIR__ . '/../config/database.php';
 include_once __DIR__ . '/../models/WorkOrder.php';
 include_once __DIR__ . '/../models/WorkOrderPhoto.php'; // Incluir modelo de fotos
+include_once __DIR__ . '/../models/Customer.php'; // <<< CAMBIO: Incluir modelo de Cliente
 
 define('UPLOAD_TEMP_DIR', __DIR__ . '/../../uploads/temp/');
 define('UPLOAD_FINAL_DIR', __DIR__ . '/../../uploads/');
@@ -13,12 +14,14 @@ class WorkOrderController
 
     private $db;
     private $workOrder;
+    private $customerModel; // <<< CAMBIO
 
     public function __construct()
     {
         $database = new Database();
         $this->db = $database->getConnection();
         $this->workOrder = new WorkOrder($this->db);
+        $this->customerModel = new Customer($this->db); // <<< CAMBIO
     }
 
     private function checkSession()
@@ -53,12 +56,12 @@ class WorkOrderController
         }
     }
 
+    // (La función syncPhotos y syncPhotoDeletion no necesitan cambios)
     private function syncPhotos($work_order_id, $file_data, $photo_type)
     {
         $photoModel = new WorkOrderPhoto($this->db);
         $all_success = true;
 
-        // 1. Definir la subcarpeta final
         $FINAL_DEST_DIR = UPLOAD_FINAL_DIR . $photo_type . '/';
         if (!is_dir($FINAL_DEST_DIR)) {
             if (!mkdir($FINAL_DEST_DIR, 0777, true)) {
@@ -69,25 +72,16 @@ class WorkOrderController
 
         if (is_array($file_data)) {
             foreach ($file_data as $file_info) {
-
-                // Si el archivo ya tiene la ruta final, significa que el usuario NO LO CAMBIÓ.
-                // La función syncPhotoDeletion se encargó de verificar si debe mantenerse o eliminarse.
                 if (strpos($file_info, 'uploads/') === 0) {
-                    continue; // ⬅️ OMITIMOS archivos ya existentes en la BD.
+                    continue; 
                 }
-
-                // Caso: Archivo NUEVO (nombre temporal de FilePond)
                 $temp_file_name = $file_info;
                 $source_path = UPLOAD_TEMP_DIR . basename($temp_file_name);
-
-                // Generar nombre de archivo final y ruta de BD
                 $final_file_name = $work_order_id . '_' . basename($temp_file_name);
                 $db_path_to_save = 'uploads/' . $photo_type . '/' . $final_file_name;
 
-                // Mover el archivo temporal a la ruta final
                 if (file_exists($source_path)) {
                     if (rename($source_path, $FINAL_DEST_DIR . $final_file_name)) {
-                        // Guardar la ruta del nuevo archivo
                         if (!$photoModel->savePhotoPath($work_order_id, $photo_type, $db_path_to_save)) {
                             error_log("SQL FAIL on new photo: " . $this->db->errorInfo()[2]);
                             $all_success = false;
@@ -97,12 +91,12 @@ class WorkOrderController
                         $all_success = false;
                     }
                 }
-                // Si el archivo temporal no existe, simplemente lo omitimos (pudo haber sido revertido).
             }
         }
         return $all_success;
     }
-    // [GET] /api/workorders/all - Lista todas las órdenes (Asume que WorkOrder.php tiene getAll())
+    
+    // [GET] /api/workorders/all - (Sin cambios, el modelo fue actualizado)
     public function listAll()
     {
         $this->checkSession();
@@ -111,11 +105,8 @@ class WorkOrderController
             echo json_encode(["success" => false, "message" => "Acceso denegado."]);
             return;
         }
-
-        // Implementación simplificada
-        $stmt = $this->workOrder->getAll(); // Asume que getAll() existe
+        $stmt = $this->workOrder->getAll();
         $num = $stmt->rowCount();
-
         if ($num > 0) {
             $orders_arr = ["data" => []];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -128,16 +119,13 @@ class WorkOrderController
         }
     }
 
-    // [GET] /api/workorders/assigned - Lista órdenes asignadas al técnico (Asume que WorkOrder.php tiene getAssignedTo())
+    // [GET] /api/workorders/assigned - (Sin cambios, el modelo fue actualizado)
     public function listAssigned()
     {
         $this->checkSession();
         $user_id = $_SESSION['user_id'];
-
-        // Implementación simplificada
-        $stmt = $this->workOrder->getAssignedTo($user_id); // Asume que getAssignedTo() existe
+        $stmt = $this->workOrder->getAssignedTo($user_id);
         $num = $stmt->rowCount();
-
         if ($num > 0) {
             $orders_arr = ["data" => []];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -150,7 +138,7 @@ class WorkOrderController
         }
     }
 
-    // [GET] /api/workorders/next-number - Obtiene el siguiente número de orden (sin cambios)
+    // [GET] /api/workorders/next-number - (Sin cambios)
     public function getNextWorkOrderNumber()
     {
         header("Content-Type: application/json; charset=UTF-8");
@@ -166,22 +154,20 @@ class WorkOrderController
     }
 
 
-    // [GET] /api/workorders/details/{id} - Obtiene todos los detalles incluyendo fotos
+    // [GET] /api/workorders/details/{id} - (Sin cambios, el modelo fue actualizado)
     public function getDetails($id)
     {
         $this->checkSession();
         header("Content-Type: application/json; charset=UTF-8");
 
-        $data = $this->workOrder->findById($id);
+        $data = $this->workOrder->findById($id); // findById ahora hace el JOIN
 
         if ($data) {
-            // Obtener Involved Technicians (Tags)
             $tech_query = "SELECT user_id FROM workordertechnicians WHERE work_order_id = ?";
             $stmt = $this->db->prepare($tech_query);
             $stmt->execute([$id]);
             $data['involved_technicians'] = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
 
-            // OBTENER FOTOS
             $photoModel = new WorkOrderPhoto($this->db);
             $data['photos'] = $photoModel->getPhotosByWorkOrder($id);
 
@@ -193,7 +179,7 @@ class WorkOrderController
         }
     }
 
-    // [POST] /api/workorders/create - Crea una nueva orden
+    // [POST] /api/workorders/create - (ACTUALIZADO para manejar customer_id)
     public function create()
     {
         $this->checkSession();
@@ -209,9 +195,40 @@ class WorkOrderController
 
         $data = json_decode(file_get_contents("php://input"), true);
 
-        if (empty($data['category']) || empty($data['customerName']) || empty($data['assignToEmail'])) {
+        // --- CAMBIO: Lógica de Cliente ---
+        $customer_id = $data['customer_id'] ?? null;
+
+        // Si customer_id NO es un número (es una 'tag' nueva) o es nulo
+        if (!is_numeric($customer_id)) {
+            
+            if (empty($data['customer_name_new']) || empty($data['customer_city'])) {
+                 http_response_code(400);
+                 echo json_encode(["success" => false, "message" => "New customer name and city are required."]);
+                 exit();
+            }
+            $customerData = [
+                'customer_name' => $data['customer_name_new'],
+                'customer_city' => $data['customer_city'],
+                'customer_phone' => $data['customer_phone'] ?? null,
+                'customer_email' => null, // El formulario no lo pide
+                'customer_type' => $data['customer_type'] ?? null
+            ];
+            
+            // Usamos el modelo Customer para crear/encontrar el cliente
+            $customer_id = $this->customerModel->create($customerData);
+
+            if ($customer_id == 0) {
+                 http_response_code(500);
+                 echo json_encode(["success" => false, "message" => "Failed to create or find the customer."]);
+                 exit();
+            }
+        }
+        // --- FIN: Lógica de Cliente ---
+
+
+        if (empty($data['category']) || empty($data['assignToEmail'])) {
             http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Incomplete data."]);
+            echo json_encode(["success" => false, "message" => "Incomplete data (Category or Assigned Tech)."]);
             return;
         }
 
@@ -225,14 +242,14 @@ class WorkOrderController
             return;
         }
 
+        // --- CAMBIO: Preparar datos para el modelo WorkOrder ---
         $wo_data = [
             "workOrderNumber" => $data['workOrderNumber'],
             "admin_id" => $_SESSION['user_id'],
             "assigned_to_user_id" => $tech['user_id'],
-            "customerName" => $data['customerName'],
-            "city" => $data['city'],
-            "phoneNumber" => $data['phoneNumber'],
-            "customerType" => $data['customerType'],
+            
+            "customer_id" => $customer_id, // <<< CAMBIO
+            
             "serviceDate" => $data['serviceDate'],
             "category" => $data['category'],
             "subcategory" => $data['subcategory'],
@@ -245,22 +262,18 @@ class WorkOrderController
             $work_order_id = $this->db->lastInsertId();
             $this->syncInvolvedTechnicians($work_order_id, $data['assignedTechnicians']);
 
-            // PASO 1: ELIMINAR TODOS LOS REGISTROS ANTIGUOS DE FOTOS (Se ejecuta solo UNA vez)
             $photoModel = new WorkOrderPhoto($this->db);
-            $photoModel->deletePhotosByWorkOrder($work_order_id); // ¡Nueva ubicación!
+            $photoModel->deletePhotosByWorkOrder($work_order_id); 
 
-            // PASO 2: SINCRONIZAR Y REGISTRAR EL NUEVO SET DE FOTOS
             $sync_before_success = $this->syncPhotos($work_order_id, $data['photosBefore'] ?? [], 'before');
             $sync_after_success = $this->syncPhotos($work_order_id, $data['photosAfter'] ?? [], 'after');
 
-            // Si la creación de la WO fue exitosa, pero falló la sincronización de fotos
             if ($sync_before_success && $sync_after_success) {
                 http_response_code(201);
                 echo json_encode(["success" => true, "message" => "Work Order Created."]);
             } else {
-                // En este punto, la orden se creó, pero la foto 'before' falló.
-                http_response_code(201); // Mantenemos 201 ya que la WO sí se creó
-                echo json_encode(["success" => true, "message" => "Work Order Created. WARNING: Failed to save some photos. Check activity description."]);
+                http_response_code(201); 
+                echo json_encode(["success" => true, "message" => "Work Order Created. WARNING: Failed to save some photos."]);
             }
         } else {
             http_response_code(503);
@@ -269,6 +282,7 @@ class WorkOrderController
     }
 
 
+    // [POST] /api/workorders/update/{id} - (ACTUALIZADO para manejar customer_id)
     public function update($id)
     {
         $this->checkSession();
@@ -278,10 +292,34 @@ class WorkOrderController
         $data = json_decode(file_get_contents("php://input"), true);
 
         $is_success = false;
-        $work_order_id = $id; // Usamos $work_order_id para claridad en las fotos
+        $work_order_id = $id; 
 
-        // --- LÓGICA DE ACTUALIZACIÓN (depende del rol) ---
         if ($role === 'admin') {
+            
+            // --- CAMBIO: Lógica de Cliente (igual a create) ---
+            $customer_id = $data['customer_id'] ?? null;
+            if (!is_numeric($customer_id)) {
+                if (empty($data['customer_name_new']) || empty($data['customer_city'])) {
+                    http_response_code(400);
+                    echo json_encode(["success" => false, "message" => "New customer name and city are required."]);
+                    exit();
+                }
+                $customerData = [
+                    'customer_name' => $data['customer_name_new'],
+                    'customer_city' => $data['customer_city'],
+                    'customer_phone' => $data['customer_phone'] ?? null,
+                    'customer_email' => null,
+                    'customer_type' => $data['customer_type'] ?? null
+                ];
+                $customer_id = $this->customerModel->create($customerData);
+                if ($customer_id == 0) {
+                    http_response_code(500);
+                    echo json_encode(["success" => false, "message" => "Failed to create or find the customer."]);
+                    exit();
+                }
+            }
+            // --- FIN: Lógica de Cliente ---
+
             // 1. Obtener el ID del técnico
             $user_stmt = $this->db->prepare("SELECT user_id FROM users WHERE email = ? AND role = 'technician'");
             $user_stmt->execute([$data['assignToEmail']]);
@@ -293,12 +331,10 @@ class WorkOrderController
                 return;
             }
 
-            // 2. Preparar datos de Admin
+            // --- CAMBIO: Preparar datos de Admin ---
             $wo_data = [
-                "customerName" => $data['customerName'],
-                "city" => $data['city'],
-                "phoneNumber" => $data['phoneNumber'],
-                "customerType" => $data['customerType'],
+                "customer_id" => $customer_id, // <<< CAMBIO
+                
                 "serviceDate" => $data['serviceDate'],
                 "category" => $data['category'],
                 "subcategory" => $data['subcategory'],
@@ -308,27 +344,22 @@ class WorkOrderController
                 "isEmergency" => $data['isEmergency'] ? 1 : 0
             ];
 
-            // 3. Actualizar
             $is_success = $this->workOrder->updateAdminFields($work_order_id, $wo_data);
             $this->syncInvolvedTechnicians($work_order_id, $data['assignedTechnicians']);
-        } elseif ($role === 'technician') {
-            // LÓGICA DE ACTUALIZACIÓN DEL TÉCNICO
 
-            // 1. Convertir booleanos
+        } elseif ($role === 'technician') {
+            
+            // LÓGICA DE ACTUALIZACIÓN DEL TÉCNICO (Sin cambios)
             $data['workAfter5PM'] = $data['workAfter5PM'] ? 1 : 0;
             $data['workWeekend'] = $data['workWeekend'] ? 1 : 0;
             $data['isEmergency'] = $data['isEmergency'] ? 1 : 0;
 
-            // 2. Actualizar
             $is_success = $this->workOrder->updateTechFields($work_order_id, $data);
-
-            // 3. Sincronizar tags
             $this->syncInvolvedTechnicians($work_order_id, $data['assignedTechnicians']);
         }
 
-        // --- MANEJO DE RESPUESTA Y NOTIFICACIÓN ---
         if ($is_success) {
-            // 1. OBTENER EMAIL Y NOMBRE DEL CREADOR (ADMIN) - ¡CRÍTICO PARA LA NOTIFICACIÓN!
+            // (Lógica de notificación y sincronización de fotos sin cambios)
             $creator_query = "SELECT u.email, u.full_name 
                               FROM workorders wo
                               JOIN users u ON wo.created_by_admin_id = u.user_id
@@ -336,12 +367,9 @@ class WorkOrderController
             $creator_stmt = $this->db->prepare($creator_query);
             $creator_stmt->execute([$work_order_id]);
             $creator_data = $creator_stmt->fetch(PDO::FETCH_ASSOC);
-
             $creator_email = $creator_data['email'] ?? null;
             $creator_name = $creator_data['full_name'] ?? 'Admin Dispatcher';
-            // ------------------------------------------------------------------------
 
-            // 2. Sincronización de fotos
             $paths_before = $data['photosBefore'] ?? [];
             $paths_after = $data['photosAfter'] ?? [];
             $all_paths_to_keep = array_merge($paths_before, $paths_after);
@@ -350,14 +378,13 @@ class WorkOrderController
             $sync_before_success = $this->syncPhotos($work_order_id, $paths_before, 'before');
             $sync_after_success = $this->syncPhotos($work_order_id, $paths_after, 'after');
 
-            // 3. Devolver éxito con el email del admin
             if ($sync_before_success && $sync_after_success) {
                 http_response_code(200);
                 echo json_encode([
                     "success" => true,
                     "message" => "Work Order Updated.",
-                    "adminEmail" => $creator_email, // <<< Correo del creador para JS
-                    "adminName" => $creator_name,   // <<< Nombre del creador para JS
+                    "adminEmail" => $creator_email,
+                    "adminName" => $creator_name,
                 ]);
             } else {
                 http_response_code(200);
@@ -375,37 +402,25 @@ class WorkOrderController
     }
 
 
-
+    // (appendDebugLog y syncPhotoDeletion sin cambios)
     private function appendDebugLog($work_order_id, $message)
     {
-        // Escapa el mensaje para evitar inyecciones SQL en la actualización
         $safe_message = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
-
-        // Consulta para actualizar y concatenar el nuevo log al campo activity_description
         $query = "UPDATE workorders 
               SET activity_description = CONCAT(IFNULL(activity_description, ''), '\n', :message)
               WHERE work_order_id = :work_order_id";
-
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':message', $safe_message);
         $stmt->bindParam(':work_order_id', $work_order_id, PDO::PARAM_INT);
-
-        // Ejecuta sin verificar el éxito, ya que es solo un log de depuración
         $stmt->execute();
     }
 
     private function syncPhotoDeletion($work_order_id, $paths_to_keep)
     {
         $photoModel = new WorkOrderPhoto($this->db);
-
-        // Obtener todas las fotos actuales de la BD
         $all_current_photos_db = $photoModel->getPhotosByWorkOrder($work_order_id);
         $existing_paths = array_map(fn($p) => $p['file_path'], $all_current_photos_db);
-
-        // Las rutas a eliminar son las que están en la BD, pero NO en el payload de FilePond
         $paths_to_delete = array_diff($existing_paths, $paths_to_keep);
-
-        // Iterar y eliminar cada foto removida
         foreach ($paths_to_delete as $path_to_delete) {
             $photoModel->deleteSpecificPhotoByPath($path_to_delete);
         }

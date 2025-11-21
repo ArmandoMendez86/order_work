@@ -10,35 +10,95 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
-            /* Color principal: Azul Marino Profundo del logo */
             --pride-primary: #1A237E;
-
-            /* Color secundario: Gris Lavanda Claro del logo (usado para fondos y bordes) */
             --pride-secondary: #E8EAF6;
-
-            /* Color de Advertencia/Logout: Tono Ámbar/Amarillo cálido */
             --pride-warning: #FFB300;
-
-            /* Color Oscuro: Azul Oscuro para Navbar, texto y títulos (mejor contraste) */
             --pride-dark: #263238;
-
             --pride-success: #28a745;
-            /* Mantenido para estado "Completed" */
-            --pride-info: #17a2b8;
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar-dark.bg-dark {
+            background-color: var(--pride-dark) !important;
         }
 
         .btn-primary {
             background-color: var(--pride-primary);
+            border-color: var(--pride-primary);
+        }
+
+        .btn-warning {
+            background-color: var(--pride-warning);
+            border-color: var(--pride-warning);
+            color: #000;
+        }
+
+        .card-header {
+            background-color: #fff;
+        }
+
+        /* Estilos para el modal CRUD */
+        .modal-header.bg-primary {
+            background-color: var(--pride-primary) !important;
+        }
+
+        .form-crud-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--pride-primary);
+            border-bottom: 2px solid var(--pride-secondary);
+            padding-bottom: 8px;
+        }
+
+        /* Estilos para la nueva tabla colapsable */
+        .category-row {
+            cursor: pointer;
+        }
+
+        .category-row:hover {
+            background-color: #e9ecef !important;
+        }
+
+        .expand-icon {
+            transition: transform 0.2s;
+        }
+
+        .bi-caret-down-fill {
+            transform: rotate(90deg);
+        }
+
+        /* === ESTILO: Contenedor de scroll para Categorías === */
+        #categoryTableWrapper {
+            max-height: 400px;
+            /* Altura máxima */
+            overflow-y: auto;
+            /* Habilita el scroll vertical */
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+
+        /* Asegura que la tabla dentro del scroll sea de tamaño completo y sin bordes externos duplicados */
+        #categoryTable {
+            margin-bottom: 0 !important;
+        }
+
+        #categoryTable thead tr {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            z-index: 10;
         }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar navbar-expand-lg ">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" href="#"><img src="assets/img/pride2.png" alt="Pride Enterprise Logo"
-                    width="150"></a>
+            <a class="navbar-brand" href="#"><img src="assets/img/pride2.png" alt="" width="150"></a>
             <div class="d-flex align-items-center">
                 <span class="navbar-text me-3" id="loggedInUserName">
                     Loading...
@@ -50,15 +110,37 @@
     </nav>
 
     <div class="container my-5">
-        <h1 class="mb-4">Administrator Dashboard</h1>
+        <h1 class="mb-4">Admin Dashboard</h1>
 
         <div class="card shadow-lg">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">All Work Orders</h5>
-                <a href="./index.html" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create New Order</a>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="managementDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear-fill"></i> Management
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="managementDropdown">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                    data-bs-target="#clientCrudModal"><i class="bi bi-person-badge"></i> Manage
+                                    Clients</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                    data-bs-target="#userCrudModal"><i class="bi bi-people-fill"></i> Manage Users</a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                    data-bs-target="#categoryCrudModal"><i class="bi bi-list-nested"></i> Manage
+                                    Categories</a></li>
+                        </ul>
+                    </div>
+                    <a href="./index.html" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create New
+                        Order</a>
+                </div>
             </div>
             <div class="card-body">
-
                 <div class="table-responsive">
                     <table id="adminOrderTable" class="table table-striped table-hover" style="width:100%">
                         <thead>
@@ -79,11 +161,217 @@
         </div>
     </div>
 
+    <div class="modal fade" id="clientCrudModal" tabindex="-1" aria-labelledby="clientCrudModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="clientCrudModalLabel"><i class="bi bi-person-badge"></i> Client
+                        Management</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <form id="clientForm" class="p-3 border rounded mb-4 needs-validation" novalidate>
+                        <input type="hidden" id="customerId" name="customerId">
+                        <h6 class="mb-3 form-crud-header" id="clientFormTitle">Add New Client</h6>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="customerName" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="customerName" name="customerName" required>
+                                <div class="invalid-feedback">Name is required.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="customerCity" class="form-label">City</label>
+                                <input type="text" class="form-control" id="customerCity" name="customerCity" required>
+                                <div class="invalid-feedback">City is required.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="customerPhone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="customerPhone" name="customerPhone">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="customerEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="customerEmail" name="customerEmail">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="customerType" class="form-label">Customer Type</label>
+                                <input type="text" class="form-control" id="customerType" name="customerType">
+                            </div>
+                            <div class="col-12 col-md-6 text-end d-flex align-items-end justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="clientFormReset"><i
+                                        class="bi bi-x-circle"></i> Cancel</button>
+                                <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Save
+                                    Client</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <h6 class="mt-4 mb-3 form-crud-header">Existing Clients</h6>
+                    <div class="table-responsive">
+                        <table id="clientTable" class="table table-striped table-hover" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>City</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="userCrudModal" tabindex="-1" aria-labelledby="userCrudModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="userCrudModalLabel"><i class="bi bi-people-fill"></i> User Management
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm" class="p-3 border rounded mb-4 needs-validation" novalidate>
+                        <input type="hidden" id="userId" name="userId">
+                        <h6 class="mb-3 form-crud-header" id="userFormTitle">Add New User</h6>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="userName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="userName" name="userName" required>
+                                <div class="invalid-feedback">Full Name is required.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="userEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="userEmail" name="userEmail" required>
+                                <div class="invalid-feedback">A valid Email is required.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="userRole" class="form-label">Role</label>
+                                <select class="form-select" id="userRole" name="userRole" required>
+                                    <option value="" selected disabled>Select Role</option>
+                                    <option value="admin">Administrator</option>
+                                    <option value="technician">Technician</option>
+                                </select>
+                                <div class="invalid-feedback">Role is required.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="userPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="userPassword" name="userPassword"
+                                    placeholder="Leave empty to keep current password">
+                                <div class="invalid-feedback" id="passwordValidation">Password is required for new
+                                    users.</div>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-outline-secondary" id="userFormReset"><i
+                                        class="bi bi-x-circle"></i> Cancel</button>
+                                <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Save
+                                    User</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <h6 class="mt-4 mb-3 form-crud-header">Existing Users</h6>
+                    <div class="table-responsive">
+                        <table id="userTable" class="table table-striped table-hover" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="categoryCrudModal" tabindex="-1" aria-labelledby="categoryCrudModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="categoryCrudModalLabel"><i class="bi bi-list-nested"></i> Category
+                        Management</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <form id="categoryForm" class="p-3 border rounded needs-validation" novalidate>
+                                <h6 class="mb-3 form-crud-header">Add New Category</h6>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="categoryName"
+                                        placeholder="Category name..." required>
+                                    <button class="btn btn-success" type="submit"><i class="bi bi-plus-lg"></i> Add
+                                        Category</button>
+                                    <div class="invalid-feedback">Name is required.</div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="col-md-6">
+                            <form id="subcategoryForm" class="p-3 border rounded needs-validation" novalidate>
+                                <h6 class="mb-3 form-crud-header">Add New Subcategory</h6>
+                                <div class="mb-3">
+                                    <label for="categorySelectForSub" class="form-label visually-hidden">Parent
+                                        Category</label>
+                                    <select class="form-select" id="categorySelectForSub" required>
+                                        <option value="" selected disabled>Select parent category...</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a parent category.</div>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="subcategoryName"
+                                        placeholder="Subcategory name..." required>
+                                    <button class="btn btn-success" type="submit"><i class="bi bi-plus-lg"></i> Add
+                                        Subcategory</button>
+                                    <div class="invalid-feedback">Name is required.</div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <h6 class="mt-4 mb-3 form-crud-header">Existing Categories and Subcategories</h6>
+
+                    <div id="categoryTableWrapper" class="table-responsive">
+                        <table id="categoryTable" class="table table-striped table-hover" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Category/Subcategory Name</th>
+                                    <th class="text-end" style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
     <script src="assets/js/dashboard.js"></script>
+    <script src="assets/js/admin-crud.js"></script>
 </body>
 
 </html>

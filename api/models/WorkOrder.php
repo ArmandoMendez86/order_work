@@ -11,19 +11,20 @@ class WorkOrder
     $this->conn = $db;
   }
 
-  // Método para OBTENER TODAS las órdenes (para el Admin)
+  // Método para OBTENER TODAS las órdenes (ACTUALIZADO CON JOIN)
   public function getAll()
   {
     $query = "SELECT
                     wo.work_order_id,
                     wo.work_order_number,
-                    wo.customer_name,
+                    c.customer_name, -- <<< CAMBIO
                     wo.`status`,
-                    c.category_name,
+                    cat.category_name,
                     tech.full_name AS technician_name
                   FROM
                     " . $this->table_name . " wo
-                    LEFT JOIN categories c ON wo.category_id = c.category_id
+                    LEFT JOIN Customers c ON wo.customer_id = c.customer_id -- <<< CAMBIO
+                    LEFT JOIN categories cat ON wo.category_id = cat.category_id
                     LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
                   ORDER BY
                     wo.created_at DESC";
@@ -33,26 +34,26 @@ class WorkOrder
     return $stmt;
   }
 
-  // Método para OBTENER ÓRDENES ASIGNADAS (para el Técnico)
+  // Método para OBTENER ÓRDENES ASIGNADAS (ACTUALIZADO CON JOIN)
   public function getAssignedTo($user_id)
   {
     $query = "SELECT
                     wo.work_order_id,
                     wo.work_order_number,
-                    wo.customer_name,
-                    wo.customer_city,
+                    c.customer_name, -- <<< CAMBIO
+                    c.customer_city, -- <<< CAMBIO
                     wo.`status`,
-                    c.category_name
+                    cat.category_name
                   FROM
                     " . $this->table_name . " wo
-                    LEFT JOIN categories c ON wo.category_id = c.category_id
+                    LEFT JOIN Customers c ON wo.customer_id = c.customer_id -- <<< CAMBIO
+                    LEFT JOIN categories cat ON wo.category_id = cat.category_id
                   WHERE
                     wo.assigned_to_user_id = :user_id
                   ORDER BY
                     wo.created_at DESC";
 
     $stmt = $this->conn->prepare($query);
-    // Sanitizar y vincular
     $user_id = htmlspecialchars(strip_tags($user_id));
     $stmt->bindParam(':user_id', $user_id);
 
@@ -60,10 +61,9 @@ class WorkOrder
     return $stmt;
   }
 
-  // Método para encontrar la última orden del mes actual (para tu numeración)
+  // Método para encontrar la última orden del mes actual (Sin cambios)
   public function findLastByMonth($prefix)
   {
-    // $prefix será "WO-YYYY-MMM-"
     $query = "SELECT work_order_number 
                   FROM " . $this->table_name . " 
                   WHERE work_order_number LIKE :prefix 
@@ -81,16 +81,23 @@ class WorkOrder
     return null;
   }
 
+  // Método para encontrar por ID (ACTUALIZADO CON JOIN A CUSTOMERS)
   public function findById($id)
   {
     $query = "SELECT wo.*, 
-                    c.category_name, 
+                    c.customer_name, 
+                    c.customer_city, 
+                    c.customer_phone, 
+                    c.customer_type, 
+                    c.customer_email,
+                    cat.category_name, 
                     s.subcategory_name,
                     tech.email AS assign_to_email,
                     creator.full_name AS dispatcher_name,
-                    creator.email AS dispatcher_email  /* <<< CAMPO AGREGADO */
+                    creator.email AS dispatcher_email
               FROM " . $this->table_name . " wo
-              LEFT JOIN categories c ON wo.category_id = c.category_id
+              LEFT JOIN Customers c ON wo.customer_id = c.customer_id -- <<< CAMBIO
+              LEFT JOIN categories cat ON wo.category_id = cat.category_id
               LEFT JOIN subcategories s ON wo.subcategory_id = s.subcategory_id
               LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
               LEFT JOIN users creator ON wo.created_by_admin_id = creator.user_id
@@ -106,7 +113,7 @@ class WorkOrder
   // Método para CREAR una nueva orden de trabajo (ACTUALIZADO)
   public function create($data)
   {
-    // La consulta INSERT ahora incluye todos los campos nuevos
+    // La consulta INSERT ahora usa customer_id
     $query = "INSERT INTO " . $this->table_name . "
                   SET
                     work_order_number = :work_order_number,
@@ -114,10 +121,8 @@ class WorkOrder
                     assigned_to_user_id = :tech_id,
                     `status` = 'Pending',
                     
-                    customer_name = :customer_name,
-                    customer_city = :customer_city,
-                    customer_phone = :customer_phone,
-                    customer_type = :customer_type,
+                    customer_id = :customer_id, -- <<< CAMBIO
+                    
                     service_date = :service_date,
                     category_id = (SELECT category_id FROM categories WHERE category_name = :category_name),
                     subcategory_id = (SELECT subcategory_id FROM subcategories WHERE subcategory_name = :subcategory_name),
@@ -133,10 +138,9 @@ class WorkOrder
     $stmt->bindParam(':work_order_number', $data['workOrderNumber']);
     $stmt->bindParam(':admin_id', $data['admin_id']);
     $stmt->bindParam(':tech_id', $data['assigned_to_user_id']);
-    $stmt->bindParam(':customer_name', $data['customerName']);
-    $stmt->bindParam(':customer_city', $data['city']);
-    $stmt->bindParam(':customer_phone', $data['phoneNumber']);
-    $stmt->bindParam(':customer_type', $data['customerType']);
+    
+    $stmt->bindParam(':customer_id', $data['customer_id']); // <<< CAMBIO
+    
     $stmt->bindParam(':service_date', $data['serviceDate']);
     $stmt->bindParam(':category_name', $data['category']);
     $stmt->bindParam(':subcategory_name', $data['subcategory']);
@@ -150,16 +154,13 @@ class WorkOrder
     return false;
   }
 
-  // NUEVO MÉTODO: Actualiza solo los campos del ADMINISTRADOR
+  // MÉTODO: Actualiza solo los campos del ADMINISTRADOR (ACTUALIZADO)
   public function updateAdminFields($id, $data)
   {
-    // Nota: El campo assigned_to_user_id se actualiza con el ID del técnico
     $query = "UPDATE " . $this->table_name . "
                   SET
-                    customer_name = :customer_name,
-                    customer_city = :customer_city,
-                    customer_phone = :customer_phone,
-                    customer_type = :customer_type,
+                    customer_id = :customer_id, -- <<< CAMBIO
+                    
                     service_date = :service_date,
                     category_id = (SELECT category_id FROM categories WHERE category_name = :category_name),
                     subcategory_id = (SELECT subcategory_id FROM subcategories WHERE subcategory_name = :subcategory_name),
@@ -173,10 +174,8 @@ class WorkOrder
     $stmt = $this->conn->prepare($query);
 
     // Vinculación de parámetros
-    $stmt->bindParam(':customer_name', $data['customerName']);
-    $stmt->bindParam(':customer_city', $data['city']);
-    $stmt->bindParam(':customer_phone', $data['phoneNumber']);
-    $stmt->bindParam(':customer_type', $data['customerType']);
+    $stmt->bindParam(':customer_id', $data['customer_id']); // <<< CAMBIO
+    
     $stmt->bindParam(':service_date', $data['serviceDate']);
     $stmt->bindParam(':category_name', $data['category']);
     $stmt->bindParam(':subcategory_name', $data['subcategory']);
@@ -190,7 +189,7 @@ class WorkOrder
   }
 
 
-  // NUEVO MÉTODO: Actualiza solo los campos del TÉCNICO (Versión simplificada del update original)
+  // MÉTODO: Actualiza solo los campos del TÉCNICO (Sin cambios)
   public function updateTechFields($id, $data)
   {
     $query = "UPDATE " . $this->table_name . "

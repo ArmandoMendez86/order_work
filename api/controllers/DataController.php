@@ -2,6 +2,8 @@
 // api/controllers/DataController.php
 
 include_once __DIR__ . '/../config/database.php';
+// --- INCLUIR LOS MODELOS NECESARIOS ---
+include_once __DIR__ . '/../models/Customer.php'; 
 
 class DataController {
 
@@ -13,8 +15,22 @@ class DataController {
         $response = [
             "success" => false,
             "categories" => [],
-            "technicians" => []
+            "technicians" => [],
+            "customers" => [] 
         ];
+
+        // --- VERIFICACIÓN DE SESIÓN (MODIFICADA) ---
+        if (session_status() == PHP_SESSION_NONE) { session_start(); }
+
+        // <<< CAMBIO: Permitir 'admin' O 'technician' >>>
+        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'technician')) {
+            http_response_code(403);
+            // Mensaje de error más genérico
+            $response["message"] = "Unauthorized. Admin or Technician role required."; 
+            echo json_encode($response);
+            exit();
+        }
+        // --- FIN VERIFICACIÓN DE SESIÓN ---
 
         try {
             // 1. Get Categories and Subcategories
@@ -37,8 +53,7 @@ class DataController {
             }
             $response["categories"] = $categoriesData;
 
-            // 2. Get Technicians (UPDATED QUERY)
-            // We now select user_id, full_name, AND email
+            // 2. Get Technicians
             $tech_query = "SELECT user_id, full_name, email 
                            FROM users 
                            WHERE role = 'technician' 
@@ -47,10 +62,16 @@ class DataController {
             $tech_stmt = $db->prepare($tech_query);
             $tech_stmt->execute();
             
-            // This now sends an array of objects: [{user_id, full_name, email}, ...]
             $response["technicians"] = $tech_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // 3. Send successful response
+            // 3. OBTENER CLIENTES
+            $customerModel = new Customer($db);
+            $customer_stmt = $customerModel->readAll();
+            $response["customers"] = $customer_stmt->fetchAll(PDO::FETCH_ASSOC);
+            // --- FIN BLOQUE ---
+
+
+            // 4. Send successful response
             $response["success"] = true;
             http_response_code(200);
             echo json_encode($response);
@@ -62,4 +83,3 @@ class DataController {
         }
     }
 }
-?>
