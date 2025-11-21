@@ -23,7 +23,7 @@ class WorkOrder
                     tech.full_name AS technician_name
                   FROM
                     " . $this->table_name . " wo
-                    LEFT JOIN Customers c ON wo.customer_id = c.customer_id -- <<< CAMBIO
+                    LEFT JOIN customers c ON wo.customer_id = c.customer_id
                     LEFT JOIN categories cat ON wo.category_id = cat.category_id
                     LEFT JOIN users tech ON wo.assigned_to_user_id = tech.user_id
                   ORDER BY
@@ -46,7 +46,7 @@ class WorkOrder
                     cat.category_name
                   FROM
                     " . $this->table_name . " wo
-                    LEFT JOIN Customers c ON wo.customer_id = c.customer_id -- <<< CAMBIO
+                    LEFT JOIN customers c ON wo.customer_id = c.customer_id
                     LEFT JOIN categories cat ON wo.category_id = cat.category_id
                   WHERE
                     wo.assigned_to_user_id = :user_id
